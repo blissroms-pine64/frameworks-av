@@ -90,7 +90,7 @@ void awStreamListener::issueCommand(
         Command cmd, bool synchronous, const sp<AMessage> &extra) {
     CDX_CHECK(!synchronous);
 	CEDARX_UNUSE(synchronous);
-	
+
     logv("awStreamListener::issueCommand");
     Mutex::Autolock autoLock(mAutoLock);
     QueueEntry mQueueEntry;
@@ -120,7 +120,7 @@ ssize_t awStreamListener::read(void *data, size_t size, sp<AMessage> *pExtra)
 
     Mutex::Autolock autoLock(mAutoLock);
 
-    if (mEOS) 
+    if (mEOS)
     {
         return 0;
     }
@@ -137,7 +137,7 @@ ssize_t awStreamListener::read(void *data, size_t size, sp<AMessage> *pExtra)
     size_t copiedSize = 0;
     while(copiedSize < size) {
     	if(mQueueList.empty()) {
-    		logw("Have not gotten enough data, but queue is empty. %u vs %u",
+    		logw("Have not gotten enough data, but queue is empty. %zu vs %zu",
     				mAvailableSize, size);
     		break;
     	}
@@ -204,7 +204,7 @@ ssize_t awStreamListener::copy(void *data, size_t size, sp<AMessage> *pExtra)
 
     Mutex::Autolock autoLock(mAutoLock);
 
-    if (mEOS) 
+    if (mEOS)
     {
         return 0;
     }
@@ -221,7 +221,7 @@ ssize_t awStreamListener::copy(void *data, size_t size, sp<AMessage> *pExtra)
     size_t copiedSize = 0;
     while(copiedSize < size) {
     	if(mQueueList.empty()) {
-    		logw("Have not gotten enough data, but queue is empty. %u vs %u",
+    		logw("Have not gotten enough data, but queue is empty. %zu vs %zu",
     				mAvailableSize, size);
     		break;
     	}

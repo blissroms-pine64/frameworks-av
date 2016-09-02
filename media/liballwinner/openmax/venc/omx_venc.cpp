@@ -69,6 +69,29 @@ extern "C" void ImgRGBA2YUV420SP_neon(unsigned char *pu8RgbBuffer, unsigned char
 
 #define DEFAULT_BITRATE 1024*1024*2
 
+typedef struct {
+    ion_user_handle_t handle;
+    unsigned int phys_addr;
+    unsigned int size;
+} sunxi_phys_data;
+
+#define ION_IOC_SUNXI_PHYS_ADDR     7
+
+static unsigned long ion_getphyadr(int fd,ion_user_handle_t handle)
+{
+    int ret = 0;
+    struct ion_custom_data custom_data;
+    sunxi_phys_data phys_data;
+
+    custom_data.cmd = ION_IOC_SUNXI_PHYS_ADDR;
+    phys_data.handle = handle;
+    custom_data.arg = (unsigned long)&phys_data;
+    ret = ioctl(fd, ION_IOC_CUSTOM, &custom_data);
+    if(ret < 0)
+        return 0;
+
+    return phys_data.phys_addr;
+}
 
 /* H.263 Supported Levels & profiles */
 VIDEO_PROFILE_LEVEL_TYPE SupportedH263ProfileLevels[] = {
@@ -153,16 +176,16 @@ static VIDEO_PROFILE_LEVEL_TYPE SupportedAVCProfileLevels[] ={
   {OMX_VIDEO_AVCProfileHigh, OMX_VIDEO_AVCLevel42},
   {OMX_VIDEO_AVCProfileHigh, OMX_VIDEO_AVCLevel5},
   {OMX_VIDEO_AVCProfileHigh, OMX_VIDEO_AVCLevel51},
-  
-  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel1 },        
-  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel1b},      
-  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel11},     
-  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel12},     
-  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel13},    
-  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel2 },    
-  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel21},   
-  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel22},  
-  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel3 },  
+
+  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel1 },
+  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel1b},
+  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel11},
+  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel12},
+  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel13},
+  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel2 },
+  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel21},
+  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel22},
+  {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel3 },
   {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel31},
   {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel32},
   {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel4},
@@ -173,7 +196,7 @@ static VIDEO_PROFILE_LEVEL_TYPE SupportedAVCProfileLevels[] ={
 
   {-1,-1}};
 
- 
+
 /*
  *     M A C R O S
  */
@@ -250,11 +273,11 @@ static void getCallingProcessName(char *name)
 		loge("error in params");
 		return;
 	}
-	
+
 	memset(proc_node, 0, sizeof(proc_node));
 	sprintf(proc_node, "/proc/%d/cmdline", GET_CALLING_PID);
 	int fp = ::open(proc_node, O_RDONLY);
-	if (fp > 0) 
+	if (fp > 0)
 	{
 		memset(name, 0, 128);
 		::read(fp, name, 128);
@@ -262,7 +285,7 @@ static void getCallingProcessName(char *name)
 		fp = 0;
 		logd("Calling process is: %s", name);
 	}
-	else 
+	else
 	{
 		loge("Obtain calling process failed");
 	}
@@ -318,8 +341,8 @@ omx_venc::omx_venc()
 	mFirstInputFrame     = OMX_TRUE;
 
     memset(mCallingProcess,0,sizeof(mCallingProcess));
-    
-#if CONFIG_OS == OPTION_OS_ANDROID	
+
+#if CONFIG_OS == OPTION_OS_ANDROID
 	getCallingProcessName(mCallingProcess);
 	if((strcmp(mCallingProcess, "com.android.cts.media") == 0) || (strcmp(mCallingProcess, "com.android.cts.videoperf") == 0) || (strcmp(mCallingProcess, "com.android.pts.videoperf") == 0))
 	{
@@ -349,7 +372,7 @@ omx_venc::omx_venc()
 
 	omx_sem_init(&m_msg_sem, 0);
 	omx_sem_init(&m_input_sem, 0);
-	
+
     logd("omx_enc Create!");
 }
 
@@ -433,7 +456,7 @@ OMX_ERRORTYPE omx_venc::component_init(OMX_STRING pName)
 	logd(" COMPONENT_INIT, name = %s", pName);
 
 	strncpy((char*)m_cName, pName, OMX_MAX_STRINGNAME_SIZE);
-	
+
 	if(!strncmp((char*)m_cName, "OMX.allwinner.video.encoder.avc", OMX_MAX_STRINGNAME_SIZE))
 	{
 		strncpy((char*)m_cRole, "video_encoder.avc", OMX_MAX_STRINGNAME_SIZE);
@@ -462,7 +485,7 @@ OMX_ERRORTYPE omx_venc::component_init(OMX_STRING pName)
 	}
 
 	// init codec type
-	if(OMX_VIDEO_CodingAVC == m_eCompressionFormat) 
+	if(OMX_VIDEO_CodingAVC == m_eCompressionFormat)
 	{
 		m_vencCodecType = VENC_CODEC_H264;
 	}
@@ -516,7 +539,7 @@ OMX_ERRORTYPE omx_venc::component_init(OMX_STRING pName)
     m_sOutPortDefType.format.video.nFrameHeight = 144;
     m_sOutPortDefType.eDir 						= OMX_DirOutput;
 
-//for 4k recorder @30fps	
+//for 4k recorder @30fps
 #if ((CONFIG_CHIP == OPTION_CHIP_1639)&&(CONFIG_PRODUCT == OPTION_PRODUCT_TVBOX))
     m_sOutPortDefType.nBufferCountMin 			= 6;
     m_sOutPortDefType.nBufferCountActual 		= 6;
@@ -698,7 +721,7 @@ OMX_ERRORTYPE omx_venc::component_init(OMX_STRING pName)
 	m_useAndroidBuffer = OMX_FALSE;
 	m_useMetaDataInBuffers = OMX_FALSE;
 	m_prependSPSPPSToIDRFrames = OMX_FALSE;
-	
+
 	memset(&mVideoExtParams, 0, sizeof(OMX_VIDEO_PARAMS_EXTENDED));
 	memset(&mVideoSuperFrame, 0, sizeof(OMX_VIDEO_PARAMS_SUPER_FRAME));
 	memset(&mVideoSVCSkip, 0, sizeof(VencH264SVCSkip));
@@ -832,7 +855,7 @@ OMX_ERRORTYPE  omx_venc::get_parameter(OMX_IN OMX_HANDLETYPE pHComp,
     	logv("Get Param in Invalid pParamData \n");
         return OMX_ErrorBadParameter;
     }
-    
+
     switch(eParamIndex)
     {
     	case OMX_IndexParamVideoInit:
@@ -935,7 +958,7 @@ OMX_ERRORTYPE  omx_venc::get_parameter(OMX_IN OMX_HANDLETYPE pHComp,
 
     		break;
     	}
-		
+
         case OMX_IndexParamVideoBitrate:
 		{
 			logv(" COMPONENT_GET_PARAMETER: OMX_IndexParamVideoBitrate");
@@ -947,14 +970,14 @@ OMX_ERRORTYPE  omx_venc::get_parameter(OMX_IN OMX_HANDLETYPE pHComp,
             {
                 eError = OMX_ErrorBadPortIndex;
             }
-            break;			
+            break;
 		}
 
 	    case OMX_IndexParamVideoAvc:
 	    {
 	    	logv(" COMPONENT_GET_PARAMETER: OMX_IndexParamVideoAvc");
             OMX_VIDEO_PARAM_AVCTYPE* pComponentParam = (OMX_VIDEO_PARAM_AVCTYPE*)pParamData;
-			
+
             if (pComponentParam->nPortIndex == m_sH264Type.nPortIndex)
             {
                 memcpy(pComponentParam, &m_sH264Type, sizeof(OMX_VIDEO_PARAM_AVCTYPE));
@@ -1069,7 +1092,7 @@ OMX_ERRORTYPE  omx_venc::get_parameter(OMX_IN OMX_HANDLETYPE pHComp,
         	{
         		eError = OMX_ErrorNoMore;
         	}
-			
+
         	break;
         }
 
@@ -1083,7 +1106,7 @@ OMX_ERRORTYPE  omx_venc::get_parameter(OMX_IN OMX_HANDLETYPE pHComp,
 		#endif
 
     	default:
-    	{	
+    	{
 		    switch((VIDENC_CUSTOM_INDEX)eParamIndex)
 	    	{
 	 	        case VideoEncodeCustomParamextendedVideo:
@@ -1108,7 +1131,7 @@ OMX_ERRORTYPE  omx_venc::get_parameter(OMX_IN OMX_HANDLETYPE pHComp,
 				{
 				    loge("getparameter: unknown param %08x\n", pParamData);
 		    		eError = OMX_ErrorUnsupportedIndex;
-		    		break;	
+		    		break;
 		    	}
 
 			}
@@ -1148,7 +1171,7 @@ OMX_ERRORTYPE  omx_venc::set_parameter(OMX_IN OMX_HANDLETYPE pHComp, OMX_IN OMX_
 	    case OMX_IndexParamPortDefinition:
 	    {
 	    	logv(" COMPONENT_SET_PARAMETER: OMX_IndexParamPortDefinition");
-			
+
             if (((OMX_PARAM_PORTDEFINITIONTYPE *)(pParamData))->nPortIndex == m_sInPortDefType.nPortIndex)
             {
             	logv("in, nPortIndex: %d", (int)(((OMX_PARAM_PORTDEFINITIONTYPE *)(pParamData))->nBufferCountActual));
@@ -1234,7 +1257,7 @@ OMX_ERRORTYPE  omx_venc::set_parameter(OMX_IN OMX_HANDLETYPE pHComp, OMX_IN OMX_
 	            m_sOutPortDefType.nBufferSize = m_sOutPortDefType.format.video.nFrameWidth * m_sOutPortDefType.format.video.nFrameHeight * 3 / 2;
 
  				m_framerate = (m_sInPortDefType.format.video.xFramerate >> 16);
-				
+
 				logd("m_framerate: %d", (int)m_framerate);
 	        }
 	        else
@@ -1355,10 +1378,10 @@ OMX_ERRORTYPE  omx_venc::set_parameter(OMX_IN OMX_HANDLETYPE pHComp, OMX_IN OMX_
 
         	break;
 	    }
-		
+
         case OMX_IndexParamVideoBitrate:
         {
-			logv(" COMPONENT_SET_PARAMETER: OMX_IndexParamVideoBitrate"); 
+			logv(" COMPONENT_SET_PARAMETER: OMX_IndexParamVideoBitrate");
             OMX_VIDEO_PARAM_BITRATETYPE* pComponentParam = (OMX_VIDEO_PARAM_BITRATETYPE*)pParamData;
             if (pComponentParam->nPortIndex == m_sOutPutBitRateType.nPortIndex)
             {
@@ -1368,7 +1391,7 @@ OMX_ERRORTYPE  omx_venc::set_parameter(OMX_IN OMX_HANDLETYPE pHComp, OMX_IN OMX_
                 {
                     m_sOutPutBitRateType.nTargetBitrate = DEFAULT_BITRATE;
                 }
-				
+
                 m_sOutPortDefType.format.video.nBitrate = m_sOutPutBitRateType.nTargetBitrate;
 
 				if(m_state == OMX_StateExecuting && m_encoder)
@@ -1387,7 +1410,7 @@ OMX_ERRORTYPE  omx_venc::set_parameter(OMX_IN OMX_HANDLETYPE pHComp, OMX_IN OMX_
 	    {
 	    	logv(" COMPONENT_SET_PARAMETER: OMX_IndexParamVideoAvc");
             OMX_VIDEO_PARAM_AVCTYPE* pComponentParam = (OMX_VIDEO_PARAM_AVCTYPE*)pParamData;
-			
+
             if (pComponentParam->nPortIndex == m_sH264Type.nPortIndex)
             {
                 memcpy(&m_sH264Type,pComponentParam, sizeof(OMX_VIDEO_PARAM_AVCTYPE));
@@ -1427,7 +1450,7 @@ OMX_ERRORTYPE  omx_venc::set_parameter(OMX_IN OMX_HANDLETYPE pHComp, OMX_IN OMX_
 				m_vencCyclicIntraRefresh.nBlockNumber = mbWidth*mbHeight/pComponentParam->nCirMBs;
 				logd("m_vencCyclicIntraRefresh.nBlockNumber: %d", m_vencCyclicIntraRefresh.nBlockNumber);
 			}
-	    	break;			
+	    	break;
 		}
 
 	    default:
@@ -1454,10 +1477,10 @@ OMX_ERRORTYPE  omx_venc::set_parameter(OMX_IN OMX_HANDLETYPE pHComp, OMX_IN OMX_
 
 					logd(" COMPONENT_SET_PARAMETER: VideoEncodeCustomParamStoreMetaDataInBuffers %d",
 								m_useMetaDataInBuffers);
-					
-			    	break;			
+
+			    	break;
 				}
-				
+
 				case VideoEncodeCustomParamPrependSPSPPSToIDRFrames:
 				{
 
@@ -1466,12 +1489,12 @@ OMX_ERRORTYPE  omx_venc::set_parameter(OMX_IN OMX_HANDLETYPE pHComp, OMX_IN OMX_
 							m_prependSPSPPSToIDRFrames);
 			    	break;
 				}
-				
+
 				case VideoEncodeCustomParamEnableAndroidNativeBuffers:
 				{
 					OMX_BOOL bFlag = ((EnableAndroidNativeBuffersParams*)pParamData)->enable;
 					OMX_U32  index = ((EnableAndroidNativeBuffersParams*)pParamData)->nPortIndex;
-					
+
 					logd(" COMPONENT_SET_PARAMETER: VideoEncodeCustomParamEnableAndroidNativeBuffers,nPortIndex: %d,enable:%d",
 							(int)index, (int)bFlag);
 			    	break;
@@ -1480,13 +1503,13 @@ OMX_ERRORTYPE  omx_venc::set_parameter(OMX_IN OMX_HANDLETYPE pHComp, OMX_IN OMX_
 				{
 					logd("set VideoEncodeCustomParamextendedVideo");
 					memcpy(&mVideoExtParams, pParamData, sizeof(OMX_VIDEO_PARAMS_EXTENDED));
-					break;	
+					break;
 				}
 				case VideoEncodeCustomParamextendedVideoSuperframe:
 				{
 					logd("set VideoEncodeCustomParamextendedVideoSuperframe");
 					memcpy(&mVideoSuperFrame, pParamData, sizeof(OMX_VIDEO_PARAMS_SUPER_FRAME));
-					break;	
+					break;
 				}
 				case VideoEncodeCustomParamextendedVideoSVCSkip:
 		        {
@@ -1498,7 +1521,7 @@ OMX_ERRORTYPE  omx_venc::set_parameter(OMX_IN OMX_HANDLETYPE pHComp, OMX_IN OMX_
 				{
 				    loge("Setparameter: unknown param %x\n", eParamIndex);
 		    		eError = OMX_ErrorUnsupportedIndex;
-		    		break;	
+		    		break;
 		    	}
 			}
 #else
@@ -1592,7 +1615,7 @@ OMX_ERRORTYPE omx_venc::set_config(OMX_IN OMX_HANDLETYPE pHComp, OMX_IN OMX_INDE
 					m_sInPortDefType.format.video.xFramerate = pData->xEncodeFramerate;
 					m_framerate = (m_sInPortDefType.format.video.xFramerate >> 16);
 					post_message_to_venc(this, OMX_Venc_Cmd_ChangeFramerate);
-				    
+
 					logv("FUNC:%s, LINE:%d , pData->xEncodeFramerate = %d", __FUNCTION__,__LINE__,m_framerate);
 				}
 				break;
@@ -1737,7 +1760,7 @@ OMX_ERRORTYPE  omx_venc::use_buffer(OMX_IN    OMX_HANDLETYPE          hComponent
     {
     	pthread_mutex_lock(&m_outBufMutex);
         logv("vencOutPort: use_buffer");
-    
+
     	if((int)m_sOutBufList.nAllocSize >= m_sOutBufList.nBufArrSize)
         {
         	pthread_mutex_unlock(&m_outBufMutex);
@@ -1809,7 +1832,7 @@ OMX_ERRORTYPE omx_venc::allocate_buffer(OMX_IN    OMX_HANDLETYPE         hCompon
     {
     	pthread_mutex_lock(&m_inBufMutex);
         logv("vencInPort: malloc vbs");
-		
+
     	if((int)m_sInBufList.nAllocSize >= m_sInBufList.nBufArrSize)
         {
         	pthread_mutex_unlock(&m_inBufMutex);
@@ -1904,7 +1927,7 @@ OMX_ERRORTYPE omx_venc::free_buffer(OMX_IN  OMX_HANDLETYPE        hComponent,
 
     	pthread_mutex_lock(&m_inBufMutex);
         logv("vencInPort: free_buffer");
-    
+
     	for(nIndex = 0; nIndex < m_sInBufList.nBufArrSize; nIndex++)
     	{
     		if(pBufferHdr == &m_sInBufList.pBufArr[nIndex])
@@ -1936,7 +1959,7 @@ OMX_ERRORTYPE omx_venc::free_buffer(OMX_IN  OMX_HANDLETYPE        hComponent,
 
     	pthread_mutex_lock(&m_outBufMutex);
         logv("vencOutPort: free_buffer");
-    
+
     	for(nIndex = 0; nIndex < m_sOutBufList.nBufArrSize; nIndex++)
     	{
     		logv("pBufferHdr = %p, &m_sOutBufList.pBufArr[%d] = %p", pBufferHdr, (int)nIndex, &m_sOutBufList.pBufArr[nIndex]);
@@ -1978,7 +2001,7 @@ OMX_ERRORTYPE  omx_venc::empty_this_buffer(OMX_IN OMX_HANDLETYPE hComponent, OMX
     ThrCmdType eCmdNative   = EmptyBuf;
 
     logv(" COMPONENT_EMPTY_THIS_BUFFER");
-    
+
     if(hComponent == NULL || pBufferHdr == NULL)
     	return OMX_ErrorBadParameter;
 
@@ -1990,7 +2013,7 @@ OMX_ERRORTYPE  omx_venc::empty_this_buffer(OMX_IN OMX_HANDLETYPE hComponent, OMX
 
     if (m_state != OMX_StateExecuting && m_state != OMX_StatePause)
         return OMX_ErrorIncorrectStateOperation;
-	
+
 
     //fwrite(pBufferHdr->pBuffer, 1, pBufferHdr->nFilledLen, ph264File);
     //logv("BHF[0x%x],len[%d]", pBufferHdr->nFlags, pBufferHdr->nFilledLen);
@@ -2055,7 +2078,7 @@ OMX_ERRORTYPE  omx_venc::component_deinit(OMX_IN OMX_HANDLETYPE pHComp)
 	logd("component_deinit");
 
 	CEDARX_UNUSE(pHComp);
-	
+
     // In case the client crashes, check for nAllocSize parameter.
     // If this is greater than zero, there are elements in the list that are not free'd.
     // In that case, free the elements.
@@ -2149,7 +2172,7 @@ OMX_ERRORTYPE  omx_venc::use_EGL_image(OMX_IN OMX_HANDLETYPE               pHCom
 	CEDARX_UNUSE(uPort);
 	CEDARX_UNUSE(pAppData);
 	CEDARX_UNUSE(pEglImage);
-	
+
     return OMX_ErrorNotImplemented;
 }
 
@@ -2199,7 +2222,7 @@ OMX_ERRORTYPE omx_venc::post_event(OMX_IN ThrCmdType eCmdNative,
         write(m_cmddatapipe[1], &pCmdData, sizeof(OMX_PTR));
     else
         write(m_cmddatapipe[1], &uParam1, sizeof(uParam1));
-    
+
     pthread_mutex_unlock(&m_pipeMutex);
 
     return OMX_ErrorNone;
@@ -2258,10 +2281,10 @@ int openVencDriver(omx_venc* pVenc)
 	memset(&sBaseConfig, 0, sizeof(VencBaseConfig));
 	int size_y;
 	int size_c;
-	
+
 	pVenc->m_encoder = VideoEncCreate(pVenc->m_vencCodecType);
 	if(pVenc->m_encoder == NULL)
-	{			
+	{
     	pVenc->m_Callbacks.EventHandler(&pVenc->mOmxCmp, pVenc->m_pAppData, OMX_EventError, OMX_ErrorHardware, 0 , NULL);
         logw("VideoEncCreate fail");
 		return -1;
@@ -2292,7 +2315,7 @@ int openVencDriver(omx_venc* pVenc)
 			case 8:
 				pVenc->m_vencH264Param.sProfileLevel.nProfile = VENC_H264ProfileHigh;
 				break;
-				
+
 			default:
 				pVenc->m_vencH264Param.sProfileLevel.nProfile = VENC_H264ProfileBaseline;
 				break;
@@ -2305,7 +2328,7 @@ int openVencDriver(omx_venc* pVenc)
 
 		logd("profile-venc=%d, profile-omx=%d, frame_rate:%d, bit_rate:%d, eColorFormat:%08x\n",pVenc->m_vencH264Param.sProfileLevel.nProfile,\
 			pVenc->m_sH264Type.eProfile,pVenc->m_vencH264Param.nFramerate,pVenc->m_vencH264Param.nBitrate,pVenc->m_sInPortFormatType.eColorFormat);
-		
+
 		//set level
 		switch(pVenc->m_sH264Type.eLevel)
 		{
@@ -2337,7 +2360,7 @@ int openVencDriver(omx_venc* pVenc)
 				pVenc->m_vencH264Param.sProfileLevel.nLevel = VENC_H264Level41;
 				break;
 		}
-		
+
 		pVenc->m_vencH264Param.sQPRange.nMinqp = 6;
 		pVenc->m_vencH264Param.sQPRange.nMaxqp = 45;
 		VideoEncSetParameter(pVenc->m_encoder, VENC_IndexParamH264Param, &pVenc->m_vencH264Param);
@@ -2346,7 +2369,7 @@ int openVencDriver(omx_venc* pVenc)
         {
             setSuperFrameCfg(pVenc);
         }
-        
+
 		if(pVenc->mVideoSVCSkip.nTemporalSVC || pVenc->mVideoSVCSkip.nSkipFrame)
 	    {
 	        setSVCSkipCfg(pVenc);
@@ -2360,7 +2383,7 @@ int openVencDriver(omx_venc* pVenc)
 #endif
 
 	}
-	
+
 	switch(pVenc->m_sInPortFormatType.eColorFormat)
 	{
 		case OMX_COLOR_FormatYUV420SemiPlanar:
@@ -2372,10 +2395,10 @@ int openVencDriver(omx_venc* pVenc)
 			pVenc->m_vencColorFormat = VENC_PIXEL_ARGB; //maybe change this later;
 			break;
 		default:
-			break;			
+			break;
 	}
 
-	
+
 	if(!pVenc->m_useMetaDataInBuffers)
 	{
 		pVenc->m_useAllocInputBuffer = OMX_TRUE;
@@ -2405,7 +2428,7 @@ int openVencDriver(omx_venc* pVenc)
 	logd("omx_venc base_config info: src_wxh:%dx%d, dis_wxh:%dx%d, stride:%d\n", (int)pVenc->m_sInPortDefType.format.video.nFrameWidth,\
 		(int)pVenc->m_sInPortDefType.format.video.nFrameHeight,(int)pVenc->m_sOutPortDefType.format.video.nFrameWidth,\
 		(int)pVenc->m_sOutPortDefType.format.video.nFrameHeight,(int)pVenc->m_sInPortDefType.format.video.nStride);
-	
+
 	sBaseConfig.nInputWidth= pVenc->m_sInPortDefType.format.video.nFrameWidth;
 	sBaseConfig.nInputHeight = pVenc->m_sInPortDefType.format.video.nFrameHeight;
 	sBaseConfig.nStride = pVenc->m_sInPortDefType.format.video.nStride;
@@ -2429,10 +2452,10 @@ int openVencDriver(omx_venc* pVenc)
 	result = VideoEncInit(pVenc->m_encoder, &sBaseConfig);
 
 	if(result != 0)
-	{	
+	{
 		VideoEncDestroy(pVenc->m_encoder);
 		pVenc->m_encoder = NULL;
-		
+
 		pVenc->m_Callbacks.EventHandler(&pVenc->mOmxCmp, pVenc->m_pAppData, OMX_EventError, OMX_ErrorHardware, 0 , NULL);
 		logw("VideoEncInit, failed, result: %d\n", result);
 
@@ -2467,7 +2490,7 @@ int openVencDriver(omx_venc* pVenc)
 			return -1;
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -2482,7 +2505,7 @@ void closeVencDriver(omx_venc* pVenc)
 
 	VideoEncUnInit(pVenc->m_encoder);
 	VideoEncDestroy(pVenc->m_encoder);
-	pVenc->m_encoder = NULL;	
+	pVenc->m_encoder = NULL;
 }
 
 
@@ -2679,8 +2702,8 @@ static void* ComponentThread(void* pThreadData)
 			                    }
 			                    else
 			                    {
-									
-			                    	//* init encoder 
+
+			                    	//* init encoder
 									//post_message_to_venc_and_wait(pSelf, OMX_Venc_Cmd_Open);
 
 			                    }
@@ -2721,7 +2744,7 @@ static void* ComponentThread(void* pThreadData)
 			                    if (pSelf->m_state == OMX_StatePause)
 			                    {
 			                    	loge("encode component do not support OMX_StatePause");
-									
+
 			                    	pthread_mutex_lock(&pSelf->m_inBufMutex);
 
                                     while (pSelf->m_sInBufList.nSizeOfList > 0)
@@ -2989,7 +3012,7 @@ static void* ComponentThread(void* pThreadData)
 	        	logd("x stop command.");
 
 				post_message_to_venc_and_wait(pSelf, OMX_Venc_Cmd_Stop);
-				
+
   		        // Kill thread
  	            goto EXIT;
 	        }
@@ -3028,8 +3051,8 @@ static void* ComponentThread(void* pThreadData)
 	                	pSelf->m_sInBufList.nWritePos = 0;
 	        	}
 	    	    pthread_mutex_unlock(&pSelf->m_inBufMutex);
-				
-				
+
+
         	    // Mark current buffer if there is outstanding command
 		        if (pMarkBuf)
 		        {
@@ -3057,11 +3080,11 @@ static void* ComponentThread(void* pThreadData)
 			//* check input buffer.
 			bNoNeedSleep = OMX_FALSE;
 
-			
-			if (nInBufEos && (nInputBufferStep == OMX_VENC_STEP_GET_INPUTBUFFER)) 
+
+			if (nInBufEos && (nInputBufferStep == OMX_VENC_STEP_GET_INPUTBUFFER))
 			{
 				post_message_to_venc_and_wait(pSelf, OMX_Venc_Cmd_Enc_Idle);
-				
+
 				if(ValidBitstreamFrameNum(pSelf->m_encoder) <= 0)
 				{
 					pthread_mutex_lock(&pSelf->m_outBufMutex);
@@ -3084,7 +3107,7 @@ static void* ComponentThread(void* pThreadData)
 					//* if no output buffer, wait for some time.
 					if(pOutBufHdr == NULL)
 					{
-					
+
 					}
 					else
 					{
@@ -3095,23 +3118,23 @@ static void* ComponentThread(void* pThreadData)
 						pOutBufHdr->nFilledLen = 0;
 
 						pSelf->m_Callbacks.FillBufferDone(&pSelf->mOmxCmp, pSelf->m_pAppData, pOutBufHdr);
-						pOutBufHdr = NULL;	
+						pOutBufHdr = NULL;
 						nInBufEos = OMX_FALSE;
 					}
 				}
 			}
-			
+
 			if(nInputBufferStep == OMX_VENC_STEP_GET_INPUTBUFFER)
 			{
 				pthread_mutex_lock(&pSelf->m_inBufMutex);
-				
+
 				if(pSelf->m_sInBufList.nSizeOfList > 0)
 				{
 					pSelf->m_sInBufList.nSizeOfList--;
 					pInBufHdr = pSelf->m_sInBufList.pBufHdrList[pSelf->m_sInBufList.nReadPos++];
 					if (pSelf->m_sInBufList.nReadPos >= (int)pSelf->m_sInBufList.nAllocSize)
 						pSelf->m_sInBufList.nReadPos = 0;
-				
+
 				}
 				else
 				{
@@ -3125,20 +3148,20 @@ static void* ComponentThread(void* pThreadData)
 				if(pInBufHdr)
 				{
 					bNoNeedSleep = OMX_TRUE;
-				
+
 					if (pInBufHdr->nFlags & OMX_BUFFERFLAG_EOS)
 					{
 						// Copy flag to output buffer header
 						nInBufEos = OMX_TRUE;
 						logd(" set up nInBufEos flag.: %p", pInBufHdr);
-				
+
 						// Trigger event handler
 						pSelf->m_Callbacks.EventHandler(&pSelf->mOmxCmp, pSelf->m_pAppData, OMX_EventBufferFlag, 0x1, pInBufHdr->nFlags, NULL);
-				
+
 						// Clear flag
 						pInBufHdr->nFlags = 0;
 					}
-					
+
 					// Check for mark buffers
 					if (pInBufHdr->pMarkData)
 					{
@@ -3150,15 +3173,15 @@ static void* ComponentThread(void* pThreadData)
 							hMarkTargetComponent = pInBufHdr->hMarkTargetComponent;
 						}
 					}
-				
+
 					// Trigger event handler
 					if (pInBufHdr->hMarkTargetComponent == &pSelf->mOmxCmp && pInBufHdr->pMarkData)
 						pSelf->m_Callbacks.EventHandler(&pSelf->mOmxCmp, pSelf->m_pAppData, OMX_EventMark, 0, 0, pInBufHdr->pMarkData);
 
 
-				
+
 					if(!pSelf->m_useAllocInputBuffer)
-					{	
+					{
 						if(pInBufHdr->nFilledLen <= 0)
 						{
 							logw("skip this input buffer, pInBufHdr->nTimeStamp %lld", pInBufHdr->nTimeStamp);
@@ -3170,7 +3193,7 @@ static void* ComponentThread(void* pThreadData)
 #if CONFIG_OS == OPTION_OS_ANDROID
 
 							int buffer_type =  *(int*)(pInBufHdr->pBuffer+pInBufHdr->nOffset);
-							
+
 							if(buffer_type == kMetadataBufferTypeGrallocSource)
 							{
 								unsigned long phyaddress = 0;
@@ -3179,7 +3202,7 @@ static void* ComponentThread(void* pThreadData)
 								if(pSelf->m_sInPortFormatType.eColorFormat != OMX_COLOR_FormatAndroidOpaque) {
 									logw("do not support this format: %d", pSelf->m_sInPortFormatType.eColorFormat);
 								}
-								
+
 								bufferHanle = *(buffer_handle_t*)(pInBufHdr->pBuffer+pInBufHdr->nOffset + 4);
 
 #if (CONFIG_OS_VERSION == OPTION_OS_VERSION_ANDROID_4_2 && CONFIG_PRODUCT == OPTION_PRODUCT_PAD)
@@ -3210,7 +3233,7 @@ static void* ComponentThread(void* pThreadData)
 #if (GPU_TYPE_MALI == 1)
 									private_handle_t* hnd = (private_handle_t *)(bufferHanle);
 									colorFormat = hnd->format;
-#else 
+#else
 									IMG_native_handle_t* hnd = (IMG_native_handle_t*)(bufferHanle);
 									colorFormat = hnd->iFormat;
 #endif
@@ -3242,11 +3265,11 @@ static void* ComponentThread(void* pThreadData)
 					struct ion_handle *handle_ion;
 #endif
 
-		                            
+
 		                            if(fd != -1)
 		                            {
 
-#if (GPU_TYPE_MALI == 1) 
+#if (GPU_TYPE_MALI == 1)
 										ion_import(fd, hnd->share_fd, &handle_ion);
 #else
 										ion_import(fd, hnd->fd[0], &handle_ion);
@@ -3281,7 +3304,7 @@ static void* ComponentThread(void* pThreadData)
 									pSelf->mFirstInputFrame = OMX_FALSE;
 								}
 							#endif
-								
+
 								if(buffer_type != kMetadataBufferTypeCameraSource)
 								{
 									logw("skip this input buffer, error buffer type: %d", buffer_type);
@@ -3299,7 +3322,7 @@ static void* ComponentThread(void* pThreadData)
 						sInputBuffer.nFlag = 0;
 						sInputBuffer.nPts = pInBufHdr->nTimeStamp;
 						sInputBuffer.nID = (unsigned long)pInBufHdr;
-						
+
 						if(pInBufHdr->nFlags & OMX_BUFFERFLAG_EOS)
 						{
 							sInputBuffer.nFlag |= VENC_BUFFERFLAG_EOS;
@@ -3333,14 +3356,14 @@ static void* ComponentThread(void* pThreadData)
 							}
 #else
 							loge("do not support metadata input buffer");
-#endif							
+#endif
 						}
 
 
 
 					}
 					else
-					{	
+					{
 						int size_y;
 						int size_c;
 						int buffer_type =  *(int*)(pInBufHdr->pBuffer+pInBufHdr->nOffset);
@@ -3363,10 +3386,10 @@ static void* ComponentThread(void* pThreadData)
 							}
 							else
 							{
-								
+
 								switch(pSelf->m_sInPortFormatType.eColorFormat)
 								{
-								
+
 									case OMX_COLOR_FormatYUV420SemiPlanar:
 										size_y = pSelf->m_sInPortDefType.format.video.nStride*pSelf->m_sInPortDefType.format.video.nFrameHeight;
 										size_c = size_y>>1;
@@ -3394,7 +3417,7 @@ static void* ComponentThread(void* pThreadData)
 #if CONFIG_OS == OPTION_OS_ANDROID
 								    void* bufAddr;
 									buffer_handle_t bufferHanle;
-		
+
 									int width;
 									int height;
 
@@ -3410,7 +3433,7 @@ static void* ComponentThread(void* pThreadData)
 									{
 										int widthandstride[2];
 										unsigned char* addr[2];
-										
+
 										widthandstride[0] = width;
 										widthandstride[1] = width;
 
@@ -3425,24 +3448,24 @@ static void* ComponentThread(void* pThreadData)
 									{
 										int widthandstride[2];
 										unsigned char* addr[2];
-										
+
 										widthandstride[0] = width;
 										widthandstride[1] = (width + 31) & (~31);
 
 										addr[0] = sInputBuffer.pAddrVirY;
 										addr[1] = sInputBuffer.pAddrVirC;
 
-									#if (CONFIG_CHIP != OPTION_CHIP_1689)	
+									#if (CONFIG_CHIP != OPTION_CHIP_1689)
 										ImgRGBA2YUV420SP_neon((unsigned char *)bufAddr, addr, widthandstride, height);
-									#endif	
+									#endif
 									}
-									
+
 
 									MemAdapterFlushCache(sInputBuffer.pAddrVirY, width*height);
 									MemAdapterFlushCache(sInputBuffer.pAddrVirC, width*height/2);
 
 									GraphicBufferMapper::get().unlock(bufferHanle);
-#endif								
+#endif
 								}
 								else
 								{
@@ -3464,14 +3487,14 @@ static void* ComponentThread(void* pThreadData)
 									memcpy(sInputBuffer.pAddrVirY, pInBufHdr->pBuffer + pInBufHdr->nOffset, size_y);
 									memcpy(sInputBuffer.pAddrVirC, pInBufHdr->pBuffer + pInBufHdr->nOffset + size_y, size_c);
 
-									
+
 								}
-									
+
 
 								pSelf->m_Callbacks.EmptyBufferDone(&pSelf->mOmxCmp, pSelf->m_pAppData, pInBufHdr);
 
 								FlushCacheAllocInputBuffer(pSelf->m_encoder, &sInputBuffer);
-								
+
 								result = AddOneInputBuffer(pSelf->m_encoder, &sInputBuffer);
 								if(result!=0)
 								{
@@ -3494,19 +3517,19 @@ static void* ComponentThread(void* pThreadData)
 			{
 				int size_y;
 				int size_c;
-			
+
 				result = GetOneAllocInputBuffer(pSelf->m_encoder, &sInputBuffer);
-			
+
 				if(result !=0)
 				{
 					nInputBufferStep = OMX_VENC_STEP_GET_ALLOCBUFFER;
 				}
 				else
 				{
-					
+
 					switch(pSelf->m_sInPortFormatType.eColorFormat)
 					{
-					
+
 						case OMX_COLOR_FormatYUV420SemiPlanar:
 							size_y = pSelf->m_sInPortDefType.format.video.nStride*pSelf->m_sInPortDefType.format.video.nFrameHeight;
 							size_c = size_y>>1;
@@ -3516,15 +3539,15 @@ static void* ComponentThread(void* pThreadData)
 							size_c = size_y>>1;
 							break;
 					}
-			
-			
+
+
 					//* clear flag
 					sInputBuffer.nFlag = 0;
 					if(pInBufHdr->nFlags & OMX_BUFFERFLAG_EOS)
 					{
 						sInputBuffer.nFlag |= VENC_BUFFERFLAG_EOS;
 					}
-			
+
 					sInputBuffer.nPts = pInBufHdr->nTimeStamp;
 					sInputBuffer.bEnableCorp = 0;
 
@@ -3534,7 +3557,7 @@ static void* ComponentThread(void* pThreadData)
 #if CONFIG_OS == OPTION_OS_ANDROID
 						void* bufAddr;
 						buffer_handle_t bufferHanle;
-		
+
 						int width;
 						int height;
 
@@ -3550,7 +3573,7 @@ static void* ComponentThread(void* pThreadData)
 						{
 							int widthandstride[2];
 							unsigned char* addr[2];
-							
+
 							widthandstride[0] = width;
 							widthandstride[1] = width;
 
@@ -3564,25 +3587,25 @@ static void* ComponentThread(void* pThreadData)
 						{
 							int widthandstride[2];
 							unsigned char* addr[2];
-							
+
 							widthandstride[0] = width;
 							widthandstride[1] = (width + 31) & (~31);
 
 							addr[0] = sInputBuffer.pAddrVirY;
 							addr[1] = sInputBuffer.pAddrVirC;
-							
+
 						#if (CONFIG_CHIP != OPTION_CHIP_1689)
 							ImgRGBA2YUV420SP_neon((unsigned char *)bufAddr, addr, widthandstride, height);
 						#endif
-							
+
 						}
-						
+
 
 						MemAdapterFlushCache(sInputBuffer.pAddrVirY, width*height);
 						MemAdapterFlushCache(sInputBuffer.pAddrVirC, width*height/2);
 
 						GraphicBufferMapper::get().unlock(bufferHanle);
-#endif						
+#endif
 					}
 					else
 					{
@@ -3591,7 +3614,7 @@ static void* ComponentThread(void* pThreadData)
 					}
 
 					pSelf->m_Callbacks.EmptyBufferDone(&pSelf->mOmxCmp, pSelf->m_pAppData, pInBufHdr);
-					
+
 					result = AddOneInputBuffer(pSelf->m_encoder, &sInputBuffer);
 					if(result!=0)
 					{
@@ -3602,7 +3625,7 @@ static void* ComponentThread(void* pThreadData)
 						nInputBufferStep = OMX_VENC_STEP_GET_INPUTBUFFER;
 					}
 				}
-		
+
 				bNoNeedSleep = OMX_TRUE;
 			}
 			else if(nInputBufferStep == OMX_VENC_STEP_ADD_BUFFER_TO_ENC)
@@ -3683,12 +3706,12 @@ static void* ComponentThread(void* pThreadData)
 #endif
 
 					    pSelf->m_Callbacks.FillBufferDone(&pSelf->mOmxCmp, pSelf->m_pAppData, pOutBufHdr);
-		                pOutBufHdr = NULL;	
+		                pOutBufHdr = NULL;
 					}
 					else
 					{
 						GetOneBitstreamFrame(pSelf->m_encoder, &sOutputBuffer);
-						
+
 		            	pOutBufHdr->nTimeStamp = sOutputBuffer.nPts;
 		            	pOutBufHdr->nFilledLen = sOutputBuffer.nSize0 + sOutputBuffer.nSize1;
 					    pOutBufHdr->nOffset = 0;
@@ -3721,7 +3744,7 @@ static void* ComponentThread(void* pThreadData)
 							memcpy(pOutBufHdr->pBuffer, sOutputBuffer.pData0, sOutputBuffer.nSize0);
 							if(sOutputBuffer.nSize1){
 								memcpy(pOutBufHdr->pBuffer + sOutputBuffer.nSize0, sOutputBuffer.pData1, sOutputBuffer.nSize1);
-							}					
+							}
 						}
 
 #if SAVE_BITSTREAM
@@ -3754,13 +3777,13 @@ static void* ComponentThread(void* pThreadData)
 		 		        }
 
 		                pSelf->m_Callbacks.FillBufferDone(&pSelf->mOmxCmp, pSelf->m_pAppData, pOutBufHdr);
-		                pOutBufHdr = NULL;	
+		                pOutBufHdr = NULL;
 					}
 				}
 				else
 				{
 					//* do nothing
-				}			
+				}
 			}
 
 			if(!bNoNeedSleep)
@@ -3796,7 +3819,7 @@ static void* ComponentVencThread(void* pThreadData)
     int nRetSemGetValue;
     int nStopFlag = 0;
 	int nWaitIdle = 0;
-	
+
     // Recover the pointer to my component specific data
     omx_venc* pSelf = (omx_venc*)pThreadData;
 
@@ -3828,7 +3851,7 @@ static void* ComponentVencThread(void* pThreadData)
 					}
 					omx_sem_up(&pSelf->m_msg_sem);
 					logv("(f:%s, l:%d) vencThread receive cmd[0x%x]", __FUNCTION__, __LINE__, cmd);
-					
+
 					break;
 
 				case OMX_Venc_Cmd_Close:
@@ -3838,14 +3861,14 @@ static void* ComponentVencThread(void* pThreadData)
 					{
 						closeVencDriver(pSelf);
 					}
-					
+
 					omx_sem_up(&pSelf->m_msg_sem);
 					logv("(f:%s, l:%d) vencThread receive cmd[0x%x]", __FUNCTION__, __LINE__, cmd);
 					break;
 
 				case OMX_Venc_Cmd_Stop:
 
-					logv("(f:%s, l:%d) vencThread receive cmd[0x%x]", __FUNCTION__, __LINE__, cmd);	
+					logv("(f:%s, l:%d) vencThread receive cmd[0x%x]", __FUNCTION__, __LINE__, cmd);
 					nStopFlag = 1;
 					omx_sem_up(&pSelf->m_msg_sem);
 					logv("(f:%s, l:%d) vencThread receive cmd[0x%x]", __FUNCTION__, __LINE__, cmd);
@@ -3853,7 +3876,7 @@ static void* ComponentVencThread(void* pThreadData)
 
 				case OMX_Venc_Cmd_Enc_Idle:
 
-					logv("(f:%s, l:%d) vencThread receive cmd[0x%x]", __FUNCTION__, __LINE__, cmd);	
+					logv("(f:%s, l:%d) vencThread receive cmd[0x%x]", __FUNCTION__, __LINE__, cmd);
 					nWaitIdle = 1;
 					logv("(f:%s, l:%d) vencThread receive cmd[0x%x]", __FUNCTION__, __LINE__, cmd);
 					break;
@@ -3928,5 +3951,3 @@ static void* ComponentVencThread(void* pThreadData)
 EXIT:
     return (void*)OMX_ErrorNone;
 }
-
-

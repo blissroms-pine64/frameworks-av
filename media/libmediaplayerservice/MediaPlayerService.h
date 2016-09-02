@@ -29,6 +29,7 @@
 #include <media/MediaPlayerInterface.h>
 #include <media/Metadata.h>
 #include <media/stagefright/foundation/ABase.h>
+#include <media/ICrypto.h>
 
 #include <system/audio.h>
 

@@ -33,7 +33,6 @@ struct AMessage;
 struct DataSource;
 struct MediaBuffer;
 struct MediaExtractor;
-struct MediaSource;
 struct MetaData;
 
 class Extractor{
@@ -98,7 +97,7 @@ private:
     };
 
     struct TrackInfo {
-        sp<MediaSource> mSource;
+        sp<IMediaSource> mSource;
         size_t mTrackIndex;
         status_t mFinalResult;
         MediaBuffer *mSample;
@@ -113,7 +112,7 @@ private:
 
     sp<DataSource> mDataSource;
 
-    sp<MediaExtractor> mImpl;
+    sp<IMediaExtractor> mImpl;
     bool mIsWidevineExtractor;
 
     Vector<TrackInfo> mSelectedTracks;
@@ -145,4 +144,3 @@ private:
 }  // namespace android
 
 #endif  // MEDIA_EXTRACTOR_WRAPPER_H_
-

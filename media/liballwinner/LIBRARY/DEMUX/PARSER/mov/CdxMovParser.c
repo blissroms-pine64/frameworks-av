@@ -231,7 +231,7 @@ static cdx_int32 PlayReadyRead(MOVContext *c, CdxStreamT *fp, CdxPacketT *pkt)
             return -1;
         }
         CDX_LOGV("pkt->buf=%p(%p), pkt->length=%d, opaque_buf=%p(%p), opaque_size=%d, pkt->type=%d",
-            pkt->buf, SecureMemAdapterGetPhysicAddressCpu(pkt->buf), pkt->length, 
+            pkt->buf, SecureMemAdapterGetPhysicAddressCpu(pkt->buf), pkt->length,
             opaque_buf, SecureMemAdapterGetPhysicAddressCpu(opaque_buf), opaque_size, pkt->type);
 #if 1//BOARD_PLAYREADY_USE_SECUREOS
         if(pkt->type == CDX_MEDIA_VIDEO) {
@@ -326,7 +326,7 @@ static int checkKeyFrame(struct CdxMovParser *impl, MOVStreamContext *st)
 	//int	                   ret;
 	int stss_sample_idx;
 	int cur_sample_idx = st->mov_idx_curr.sample_idx;
-    
+
     c = (MOVContext*)impl->privData;
 
     if(st->mov_idx_curr.stss_idx > (int)st->stss_size)
@@ -340,7 +340,7 @@ static int checkKeyFrame(struct CdxMovParser *impl, MOVStreamContext *st)
         st->mov_idx_curr.stss_idx ++;
         return 1;
     }
-    
+
     while(stss_sample_idx < cur_sample_idx)
     {
 
@@ -374,11 +374,11 @@ static cdx_int32 __CdxMovParserClose(CdxParserT *parser)
         CDX_LOGE("Close mov file parser module error, there is no file information!");
         return -1;
     }
-    
+
     c = (MOVContext *)tmpMovPsr->privData;
 
     tmpMovPsr->exitFlag = 1;
-    
+
     CdxStreamForceStop(tmpMovPsr->stream);
     CdxAtomicDec(&tmpMovPsr->ref);
 	while ((ret = CdxAtomicRead(&tmpMovPsr->ref)) != 0)
@@ -390,12 +390,12 @@ static cdx_int32 __CdxMovParserClose(CdxParserT *parser)
 	#if SAVE_VIDEO
     fclose(tmpMovPsr->fp);
     #endif
-    
+
     if (c->bPlayreadySegment)
 	{
         PlayReadyCloseDrm();
 	}
-	
+
     CdxMovClose(tmpMovPsr);
     CdxMovExit(tmpMovPsr);
     tmpMovPsr = NULL;
@@ -431,7 +431,7 @@ static cdx_int32 __CdxMovParserPrefetch(CdxParserT *parser, CdxPacketT * pkt)
         tmpMovPsr->mStatus = CDX_MOV_IDLE;
         return -1;
     }
-    
+
     // if we call prefetch and do not read, we get the same packet
     if(tmpMovPsr->mStatus == CDX_MOV_PREFETCHED)
     {
@@ -481,7 +481,7 @@ static cdx_int32 __CdxMovParserPrefetch(CdxParserT *parser, CdxPacketT * pkt)
                 //CDX_LOGD("--- smaple = %x, falg = %d", st->mov_idx_curr.sample_idx, pkt->flags );
             }
         }
-        
+
     }
     else if (2 == st->stsd_type)
     {
@@ -507,7 +507,7 @@ static cdx_int32 __CdxMovParserPrefetch(CdxParserT *parser, CdxPacketT * pkt)
         		tmpMovPsr->mStatus = CDX_MOV_IDLE;
 	    		return __CdxMovParserPrefetch(parser, pkt);
         	}
-        	
+
         	char buf[2] = {0};
         	result = CdxStreamSeek(fp, c->chunk_info.offset, SEEK_SET);
 	    	if(result < 0)
@@ -529,24 +529,24 @@ static cdx_int32 __CdxMovParserPrefetch(CdxParserT *parser, CdxPacketT * pkt)
 	    	{
 	    		pkt->length = length;
 	    	}
-	    	c->chunk_info.offset += 2;	    	
+	    	c->chunk_info.offset += 2;
         }
     }
-    
+
     pkt->flags |= (FIRST_PART|LAST_PART);
     tmpMovPsr->packet.length    = pkt->length;
     tmpMovPsr->packet.type      = pkt->type;
     tmpMovPsr->packet.pts       = pkt->pts;
     tmpMovPsr->packet.duration  = pkt->duration;
     tmpMovPsr->packet.flags     = pkt->flags;
-    //CDX_LOGD("type = %d, streamindex = %d, offset = %llx, pts = %lld, length = %d, duration = %lld, st->stsd_type=%d", 
+    //CDX_LOGD("type = %d, streamindex = %d, offset = %llx, pts = %lld, length = %d, duration = %lld, st->stsd_type=%d",
     //        pkt->type, pkt->streamIndex, c->chunk_info.offset, pkt->pts, pkt->length, pkt->duration, st->stsd_type);
     tmpMovPsr->mStatus = CDX_MOV_PREFETCHED;
     return 0;
-} 
+}
 
 static cdx_int32 __CdxMovParserRead(CdxParserT *parser, CdxPacketT *pkt)
-{ 
+{
     CdxStreamT      *fp;
     struct CdxMovParser          *tmpMovPsr;
     MOVContext                  *c;
@@ -555,7 +555,7 @@ static cdx_int32 __CdxMovParserRead(CdxParserT *parser, CdxPacketT *pkt)
 
 	if(!parser)
 	    return -1;
-	    
+
     tmpMovPsr = (struct CdxMovParser *)parser;
     c = (MOVContext*)tmpMovPsr->privData;
 
@@ -595,7 +595,7 @@ static cdx_int32 __CdxMovParserRead(CdxParserT *parser, CdxPacketT *pkt)
         else if(diff < 40960)
         {
             ret = CdxStreamSkip(fp, diff);
-            if(ret < 0) 
+            if(ret < 0)
             {
                 CDX_LOGW("skip error");
                 tmpMovPsr->mStatus = CDX_MOV_IDLE;
@@ -617,7 +617,7 @@ static cdx_int32 __CdxMovParserRead(CdxParserT *parser, CdxPacketT *pkt)
     }
 
 	int size = 0;
-    if(pkt->length <= pkt->buflen) 
+    if(pkt->length <= pkt->buflen)
     {
         if (c->senc_data)
             size = PlayReadyRead(c, fp, pkt);
@@ -647,13 +647,13 @@ static cdx_int32 __CdxMovParserRead(CdxParserT *parser, CdxPacketT *pkt)
     	}
     	#endif
     }
-    else 
+    else
     {
-        if (c->senc_data) 
+        if (c->senc_data)
 		{
             size = PlayReadyRead(c, fp, pkt);
-        } 
-		else 
+        }
+		else
 		{
         	size = CdxStreamRead(fp, pkt->buf, pkt->buflen);
         	if(size < 0)
@@ -663,7 +663,7 @@ static cdx_int32 __CdxMovParserRead(CdxParserT *parser, CdxPacketT *pkt)
         		return -1;
         	}
         	//CDX_LOGD(" pkt->length=%d ,  pkt->buflen=%d",  pkt->length,  pkt->buflen);
-        	ret = CdxStreamRead(fp, pkt->ringBuf, pkt->length - pkt->buflen); 
+        	ret = CdxStreamRead(fp, pkt->ringBuf, pkt->length - pkt->buflen);
         	if(ret < 0)
         	{
         	    tmpMovPsr->mStatus = CDX_MOV_IDLE;
@@ -726,7 +726,7 @@ static cdx_int32 __CdxMovParserGetMediaInfo(CdxParserT *parser, CdxMediaInfoT * 
 		}
 	}
 	memset(pMediaInfo, 0, sizeof(CdxMediaInfoT));
-    
+
     c = (MOVContext*)tmpMovPsr->privData;
 
 	pMediaInfo->fileSize = CdxStreamSize(c->fp);
@@ -740,11 +740,11 @@ static cdx_int32 __CdxMovParserGetMediaInfo(CdxParserT *parser, CdxMediaInfoT * 
     memcpy(pMediaInfo->albumArtist,   c->title,   32*sizeof(cdx_uint8));
     memcpy(pMediaInfo->writer,   c->title,   32*sizeof(cdx_uint8));
     memcpy(pMediaInfo->genre,   c->title,   32*sizeof(cdx_uint8));
-    
+
     VideoStreamInfo* video;
     AudioStreamInfo* audio;
     SubtitleStreamInfo* subtitle;
-	//****< classical the type of stream: audio, video, subtitle 
+	//****< classical the type of stream: audio, video, subtitle
 	// NOTE:   we only support one video, audio, subtitle stream .
 	// we should modify the code of stsd and hdlr, if we want to support the multi video stream
 	for(i=0; i<c->nb_streams; i++)
@@ -758,7 +758,7 @@ static cdx_int32 __CdxMovParserGetMediaInfo(CdxParserT *parser, CdxMediaInfoT * 
 		    video->nWidth = st->codec.width;
 		    video->nHeight = st->codec.height;
 		    if(st->sample_duration)
-		    { 
+		    {
 		        video->nFrameRate = (int64_t)(st->time_scale)*1000/ (int64_t)st->sample_duration;
 		        CDX_LOGD("---- frame rate = %d, st->time_scale: %d, st->sample_duration: %d", video->nFrameRate, st->time_scale, st->sample_duration);
 		    }
@@ -767,7 +767,7 @@ static cdx_int32 __CdxMovParserGetMediaInfo(CdxParserT *parser, CdxMediaInfoT * 
 		        CDX_LOGW("sample duration is 0, cannot get the framerate");
 		        video->nFrameRate = 0;
 		    }
-		    
+
 		    CDX_LOGD("width = %d, height = %d", video->nWidth, video->nHeight);
 		    if(st->codec.extradataSize)
 		    {
@@ -776,7 +776,7 @@ static cdx_int32 __CdxMovParserGetMediaInfo(CdxParserT *parser, CdxMediaInfoT * 
 		        video->pCodecSpecificData = st->codec.extradata;
 		    }
 		    c->v2st[pMediaInfo->program[0].videoNum] = i;
-			pMediaInfo->program[0].videoNum ++;	
+			pMediaInfo->program[0].videoNum ++;
 			if(pMediaInfo->program[0].videoNum > MAX_STREAM_NUM-1)
 			{
 			    CDX_LOGW("video stream number<%d> > MAX_STREAM_NUM", pMediaInfo->program[0].videoNum);
@@ -789,15 +789,12 @@ static cdx_int32 __CdxMovParserGetMediaInfo(CdxParserT *parser, CdxMediaInfoT * 
 		    audio = &pMediaInfo->program[0].audio[pMediaInfo->program[0].audioNum];
 		    audio->eCodecFormat    = st->eCodecFormat;
 		    audio->eSubCodecFormat = st->eSubCodecFormat;
-		    audio->nChannelNum     = st->codec.channels;	    
+		    audio->nChannelNum     = st->codec.channels;
 		    audio->nBitsPerSample  = st->codec.bitsPerSample;
 		    audio->nSampleRate     = st->codec.sampleRate;
             audio->nAvgBitrate     = st->codec.bitRate;
             audio->nMaxBitRate     = st->codec.bitRate;
-            if(st->language)
-            {
-                memcpy(audio->strLang, st->language, 32);
-            }
+            memcpy(audio->strLang, st->language, 32);
 
             CDX_LOGD("********* audio %d************", pMediaInfo->program[0].audioNum);
             CDX_LOGD("****eCodecFormat:    %d", audio->eCodecFormat);
@@ -870,7 +867,7 @@ static cdx_int32 __CdxMovParserGetMediaInfo(CdxParserT *parser, CdxMediaInfoT * 
 	}
 	else
 	{
-	    pMediaInfo->bSeekable = 1; // 
+	    pMediaInfo->bSeekable = 1; //
 	}
 
     MOVStreamContext *st = NULL;
@@ -879,7 +876,7 @@ static cdx_int32 __CdxMovParserGetMediaInfo(CdxParserT *parser, CdxMediaInfoT * 
         st = c->streams[i];
     CDX_LOGD("--i = %d, stsd_type = %d, stream_index = %d, nb_streams = %d", i, st->stsd_type, st->stream_index ,c->nb_streams);
     }
-    
+
     tmpMovPsr->mStatus = CDX_MOV_IDLE;
     return 0;
 }
@@ -890,7 +887,7 @@ static cdx_int32 __CdxMovParserForceStop(CdxParserT *parser)
 	MOVContext	                *c;
 	int ret;
 
-    
+
     tmpMovPsr = (struct CdxMovParser*)parser;
     if(!tmpMovPsr || !tmpMovPsr->privData)
     {
@@ -922,7 +919,7 @@ static cdx_int32 __CdxMovParserForceStop(CdxParserT *parser)
     tmpMovPsr->mStatus = CDX_MOV_IDLE;
     tmpMovPsr->mErrno = PSR_USER_CANCEL;
     CDX_LOGD("-- mov ForceStop end");
-    
+
 	return 0;
 }
 
@@ -962,7 +959,7 @@ static cdx_int32 __CdxMovParserClrForceStop(CdxParserT *parser)
 static int __CdxMovParserControl(CdxParserT *parser, int cmd, void *param)
 {
     struct CdxMovParser *impl;
-    
+
 	CDX_CHECK(parser);
 	impl = (struct CdxMovParser*)parser;
 	MOVContext      *c = (MOVContext*)impl->privData;
@@ -994,8 +991,8 @@ static int __CdxMovParserControl(CdxParserT *parser, int cmd, void *param)
 	        c->fp = stream;        // the impl and c is the same stream, we must reset both of them
 	        c->moof_end_offset = CdxStreamTell(stream);
 	        break;
-	        
-        case CDX_PSR_CMD_GET_CACHESTATE:  
+
+        case CDX_PSR_CMD_GET_CACHESTATE:
         {
             return MovGetCacheState(impl, param);
         }
@@ -1083,7 +1080,7 @@ int __CdxMovParserInit(CdxParserT *parser)
     return 0;
 }
 
-static struct CdxParserOpsS movParserOps = 
+static struct CdxParserOpsS movParserOps =
 {
     .control 		= __CdxMovParserControl,
     .prefetch 		= __CdxMovParserPrefetch,
@@ -1134,9 +1131,9 @@ static CdxParserT *__CdxMovParserOpen(CdxStreamT *stream, cdx_uint32 flags)
         c->bSeekAble = 0;
     }
     CDX_LOGD("--- c->bSeekAble = %d", c->bSeekAble);
-    
+
     tmpMovPsr->parserinfo.ops = &movParserOps;
-    
+
     if(result < 0)
     {
         CDX_LOGE("Initiate mov file parser lib module error!");
@@ -1189,15 +1186,15 @@ static cdx_uint32 __CdxMovParserProbe(CdxStreamProbeDataT *probeData)
 		CDX_LOGE("Probe data is not enough.");
 		return 0;
 	}
-	
+
     cdx_uint32 type = GetLe32(probeData->buf+4);
     if(type == MKTAG( 'f', 't', 'y', 'p' ) || type == MKTAG( 'm', 'd', 'a', 't' )
-    	|| type == MKTAG( 'm', 'o', 'o', 'f' ) || type == MKTAG( 's', 't', 'y', 'p' ) 
+    	|| type == MKTAG( 'm', 'o', 'o', 'f' ) || type == MKTAG( 's', 't', 'y', 'p' )
     	|| type == MKTAG( 'm', 'o', 'o', 'v' ) || type == MKTAG( 's', 'k', 'i', 'p' )
     	|| type == MKTAG( 'u', 'd', 't', 'a' )|| type == MKTAG( 'u', 'u', 'i', 'd' ))
     {
     	CDX_LOGD(" --- probe: it is mov parser");
-    	return 100;       
+    	return 100;
     }
 
     return 0;
@@ -1208,4 +1205,3 @@ CdxParserCreatorT movParserCtor =
     .create = __CdxMovParserOpen,
     .probe 	= __CdxMovParserProbe
 };
-

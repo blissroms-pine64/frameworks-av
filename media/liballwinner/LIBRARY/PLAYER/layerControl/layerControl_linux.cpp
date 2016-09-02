@@ -59,23 +59,23 @@ typedef struct LayerCtrlContext
     enum EDISPLAY3DMODE  eDisplay3DMode;
     int                  bLayerInitialized;
     int                  bLayerShowed;
-    
+
     //* use when render to gpu.
     VideoPicture         bufferWrappers[32];
     int                  bBufferWrapperUsed[32];
-    
+
     //* use when render derect to hardware layer.
     VPictureNode*        pPictureListHead;
     VPictureNode         picNodes[32];
-    
+
     int                  nScreenWidth;
     int                  nScreenHeight;
-    
+
 }LayerCtrlContext;
 
 static int SetLayerParam(LayerCtrlContext* lc);
 static void setHwcLayerPictureInfo(LayerCtrlContext* lc,
-                                   disp_layer_info*  pLayerInfo, 
+                                   disp_layer_info*  pLayerInfo,
                                    VideoPicture*     pPicture,
                                    VideoPicture*     pSecondPictureOf3D);
 
@@ -84,9 +84,9 @@ LayerCtrl* LayerInit(void* pNativeWindow)
 {
     unsigned long     args[4];
     LayerCtrlContext* lc;
-    
+
     logv("LayerInit.");
-    
+
     lc = (LayerCtrlContext*)malloc(sizeof(LayerCtrlContext));
     if(lc == NULL)
     {
@@ -94,13 +94,13 @@ LayerCtrl* LayerInit(void* pNativeWindow)
         return NULL;
     }
     memset(lc, 0, sizeof(LayerCtrlContext));
-    
+
     lc->fdDisplay = open("/dev/disp", O_RDWR);
     lc->eReceivePixelFormat = PIXEL_FORMAT_YUV_MB32_420;
     lc->bRenderToHardwareLayer = 1;
-    
+
     logv("lc->bRenderToHardwareLayer=%d\n", lc->bRenderToHardwareLayer);
-    
+
     //* get screen size.
     args[0] = DISPLAY_CHANNEL;
     args[1] = DISPLAY_LAYER;
@@ -109,11 +109,11 @@ LayerCtrl* LayerInit(void* pNativeWindow)
     lc->nScreenWidth  = ioctl(lc->fdDisplay, DISP_CMD_GET_SCN_WIDTH, args);
     lc->nScreenHeight = ioctl(lc->fdDisplay, DISP_CMD_GET_SCN_HEIGHT, args);
 
-    //* open the memory module, we need get physical address of a picture buffer 
+    //* open the memory module, we need get physical address of a picture buffer
     //* by MemAdapterGetPhysicAddress().
     if(gLastPicture == NULL)
         MemAdapterOpen();
-    
+
     return (LayerCtrl*)lc;
 }
 
@@ -123,18 +123,18 @@ void LayerRelease(LayerCtrl* l, int bKeepPictureOnScreen)
 {
     LayerCtrlContext* lc;
     VPictureNode*     nodePtr;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("Layer release");
-    
+
     //* disable layer.
     if(gLastPicture == NULL)
         LayerCtrlHideVideo(l);
-    
+
     if(lc->fdDisplay >= 0)
         close(lc->fdDisplay);
-    
+
     //* return pictures.
     while(lc->pPictureListHead != NULL)
     {
@@ -142,23 +142,23 @@ void LayerRelease(LayerCtrl* l, int bKeepPictureOnScreen)
         lc->pPictureListHead = lc->pPictureListHead->pNext;
         lc->callback(lc->pUserData, MESSAGE_ID_LAYER_RETURN_BUFFER, (void*)nodePtr->pPicture);
     }
-    
+
     //* free the memory module.
     if(gLastPicture == NULL)
         MemAdapterClose();
-    
-    free(lc);   
+
+    free(lc);
 }
 
 
 int LayerSetExpectPixelFormat(LayerCtrl* l, enum EPIXELFORMAT ePixelFormat)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("Layer set expected pixel format, format = %d", (int)ePixelFormat);
-    
+
     //* reder directly to hardware layer.
     if(ePixelFormat == PIXEL_FORMAT_YUV_MB32_420   ||
        ePixelFormat == PIXEL_FORMAT_YUV_MB32_422   ||
@@ -175,7 +175,7 @@ int LayerSetExpectPixelFormat(LayerCtrl* l, enum EPIXELFORMAT ePixelFormat)
         logv("receive pixel format is %d, not match.", lc->eReceivePixelFormat);
         return -1;
     }
-    
+
     return 0;
 }
 
@@ -183,11 +183,11 @@ int LayerSetExpectPixelFormat(LayerCtrl* l, enum EPIXELFORMAT ePixelFormat)
 enum EPIXELFORMAT LayerGetPixelFormat(LayerCtrl* l)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("Layer get pixel format, return %d", lc->eReceivePixelFormat);
-    
+
     return lc->eReceivePixelFormat;
 }
 
@@ -195,18 +195,18 @@ enum EPIXELFORMAT LayerGetPixelFormat(LayerCtrl* l)
 int LayerSetPictureSize(LayerCtrl* l, int nWidth, int nHeight)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("Layer set picture size, width = %d, height = %d", nWidth, nHeight);
-    
+
     lc->nWidth         = nWidth;
     lc->nHeight        = nHeight;
     lc->nDisplayWidth  = nWidth;
     lc->nDisplayHeight = nHeight;
     lc->nLeftOff       = 0;
     lc->nTopOff        = 0;
-    
+
     return 0;
 }
 
@@ -214,12 +214,12 @@ int LayerSetPictureSize(LayerCtrl* l, int nWidth, int nHeight)
 int LayerSetDisplayRegion(LayerCtrl* l, int nLeftOff, int nTopOff, int nDisplayWidth, int nDisplayHeight)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("Layer set display region, leftOffset = %d, topOffset = %d, displayWidth = %d, displayHeight = %d",
         nLeftOff, nTopOff, nDisplayWidth, nDisplayHeight);
-    
+
     if(nDisplayWidth != 0 && nDisplayHeight != 0)
     {
         lc->nDisplayWidth  = nDisplayWidth;
@@ -236,13 +236,13 @@ int LayerSetDisplayRegion(LayerCtrl* l, int nLeftOff, int nTopOff, int nDisplayW
 int LayerSetPicture3DMode(LayerCtrl* l, enum EPICTURE3DMODE ePicture3DMode)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("Layer set picture 3d mode, mode = %d", (int)ePicture3DMode);
-    
+
     lc->ePicture3DMode = ePicture3DMode;
-    
+
     return 0;
 }
 
@@ -250,11 +250,11 @@ int LayerSetPicture3DMode(LayerCtrl* l, enum EPICTURE3DMODE ePicture3DMode)
 enum EPICTURE3DMODE LayerGetPicture3DMode(LayerCtrl* l)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("Layer get picture 3d mode, mode = %d", (int)lc->ePicture3DMode);
-    
+
     return lc->ePicture3DMode;
 }
 
@@ -265,22 +265,22 @@ int LayerSetDisplay3DMode(LayerCtrl* l, enum EDISPLAY3DMODE eDisplay3DMode)
     disp_layer_info   layerInfo;
     unsigned long     args[4];
     int               err;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("Layer set display 3d mode, mode = %d", (int)eDisplay3DMode);
-    
+
     lc->eDisplay3DMode = eDisplay3DMode;
-    
+
     if(lc->bLayerInitialized == 0)
         return 0;
-    
+
     args[0] = DISPLAY_CHANNEL;
     args[1] = DISPLAY_LAYER;
     args[2] = (unsigned long)&layerInfo;
     args[3] = 0;
     ioctl(lc->fdDisplay, DISP_CMD_LAYER_GET_INFO, args);
-    
+
     switch(lc->ePicture3DMode)
     {
         case PICTURE_3D_MODE_TWO_SEPERATED_PICTURE:
@@ -303,7 +303,7 @@ int LayerSetDisplay3DMode(LayerCtrl* l, enum EDISPLAY3DMODE eDisplay3DMode)
             layerInfo.fb.b_trd_src = 0;
             break;
     }
-    
+
     switch(eDisplay3DMode)
     {
         case DISPLAY_3D_MODE_3D:
@@ -317,10 +317,10 @@ int LayerSetDisplay3DMode(LayerCtrl* l, enum EDISPLAY3DMODE eDisplay3DMode)
                 layerInfo.out_trd_mode = DISP_3D_OUT_MODE_LI;
             else
                 layerInfo.out_trd_mode = DISP_3D_OUT_MODE_SSH;
-            
+
             layerInfo.b_trd_out = 1;
             break;
-        
+
         case DISPLAY_3D_MODE_HALF_PICTURE:
             if(lc->ePicture3DMode == PICTURE_3D_MODE_SIDE_BY_SIDE)
             {
@@ -346,10 +346,10 @@ int LayerSetDisplay3DMode(LayerCtrl* l, enum EDISPLAY3DMODE eDisplay3DMode)
                 layerInfo.fb.src_win.width  = lc->nDisplayWidth;
                 layerInfo.fb.src_win.height = lc->nDisplayHeight;
             }
-            
+
             layerInfo.b_trd_out = 0;
             break;
-        
+
         case DISPLAY_3D_MODE_2D:
         default:
             //* set source window to the full picture.
@@ -360,7 +360,7 @@ int LayerSetDisplay3DMode(LayerCtrl* l, enum EDISPLAY3DMODE eDisplay3DMode)
             layerInfo.b_trd_out = 0;
             break;
     }
-    
+
     err = ioctl(lc->fdDisplay, DISP_CMD_LAYER_SET_INFO, args);
     if(err == 0)
     {
@@ -378,11 +378,11 @@ int LayerSetDisplay3DMode(LayerCtrl* l, enum EDISPLAY3DMODE eDisplay3DMode)
 enum EDISPLAY3DMODE LayerGetDisplay3DMode(LayerCtrl* l)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("Layer get display 3d mode, mode = %d", (int)lc->eDisplay3DMode);
-    
+
     return lc->eDisplay3DMode;
 }
 
@@ -390,7 +390,7 @@ enum EDISPLAY3DMODE LayerGetDisplay3DMode(LayerCtrl* l)
 int LayerSetCallback(LayerCtrl* l, PlayerCallback callback, void* pUserData)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
     lc->callback  = callback;
     lc->pUserData = pUserData;
@@ -401,11 +401,11 @@ int LayerSetCallback(LayerCtrl* l, PlayerCallback callback, void* pUserData)
 int LayerDequeueBuffer(LayerCtrl* l, VideoPicture** ppBuf)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     *ppBuf = NULL;
-    
+
     return LAYER_RESULT_USE_OUTSIDE_BUFFER;
 }
 
@@ -419,16 +419,16 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
     VPictureNode*     nodePtr;
     disp_layer_info   layerInfo;
     unsigned long     args[4];
-    
+
     lc = (LayerCtrlContext*)l;
-        
+
     if(bValid == 0)
     {
         if(pBuf != NULL)
             lc->callback(lc->pUserData, MESSAGE_ID_LAYER_RETURN_BUFFER, (void*)pBuf);
         return 0;
     }
-    
+
     if(lc->bLayerInitialized == 0)
     {
         if(SetLayerParam(lc) != 0)
@@ -436,13 +436,13 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
             loge("can not initialize layer.");
             return -1;
         }
-        
+
         lc->bLayerInitialized = 1;
-        
+
         if(lc->eDisplay3DMode != DISPLAY_3D_MODE_2D || lc->ePicture3DMode != PICTURE_3D_MODE_NONE)
            LayerSetDisplay3DMode(l, lc->eDisplay3DMode);
     }
-    
+
     if(pBuf->nWidth != lc->nWidth ||
        pBuf->nHeight != lc->nHeight ||
        pBuf->ePixelFormat != lc->eReceivePixelFormat)
@@ -450,7 +450,7 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
         //* config the display hardware again.
         //* TODO.
     }
-    
+
     //* set picture to display hardware.
     setHwcLayerPictureInfo(lc, &layerInfo, pBuf, NULL);
     args[0] = DISPLAY_CHANNEL;
@@ -458,18 +458,18 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
     args[2] = (unsigned long)(&layerInfo);
     args[3] = 0;
     ioctl(lc->fdDisplay, DISP_CMD_LAYER_SET_INFO, args);
-   
+
     //* wait for new frame showed.
     if(lc->bLayerShowed == 1)
     {
         int nCurFrameId;
         int nWaitTime;
-        
+
         args[0] = DISPLAY_CHANNEL;
         args[1] = DISPLAY_LAYER;
         args[2] = 0;
         args[3] = 0;
-        
+
         nWaitTime = 50000;  //* max frame interval is 1000/24fps = 41.67ms, here we wait 50ms for max.
         do
         {
@@ -491,7 +491,7 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
             }
         }while(1);
     }
-    
+
     //* free last picture of last video stream in case gConfigHoldLastPicture is set.
     if(gLastPicture != NULL)
     {
@@ -499,7 +499,7 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
         FreePictureBuffer(gLastPicture);
         gLastPicture = NULL;
     }
-    
+
     //* attach the new picture to list and return the old picture.
     newNode = NULL;
     for(i=0; i<32; i++)
@@ -514,13 +514,13 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
             break;
         }
     }
-    
+
     if(i == 32)
     {
         loge("not enough picture nodes, shouldn't run here.");
         abort();
     }
-    
+
     if(lc->pPictureListHead != NULL)
     {
         nodePtr = lc->pPictureListHead;
@@ -530,10 +530,10 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
             i++;
             nodePtr = nodePtr->pNext;
         }
-        
+
         nodePtr->pNext = newNode;
         i++;
-        
+
         //* return one picture.
         while(i > NUM_OF_PICTURES_KEEP_IN_LIST)
         {
@@ -554,7 +554,7 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
     {
         lc->pPictureListHead = newNode;
     }
-    
+
     return 0;
 }
 
@@ -562,11 +562,11 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
 int LayerDequeue3DBuffer(LayerCtrl* l, VideoPicture** ppBuf0, VideoPicture** ppBuf1)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
     *ppBuf0 = NULL;
     *ppBuf1 = NULL;
-    
+
     return LAYER_RESULT_USE_OUTSIDE_BUFFER;
 }
 
@@ -579,9 +579,9 @@ int LayerQueue3DBuffer(LayerCtrl* l, VideoPicture* pBuf0, VideoPicture* pBuf1, i
     VPictureNode*     nodePtr;
     disp_layer_info   layerInfo;
     unsigned long     args[4];
-    
+
     lc = (LayerCtrlContext*)l;
-        
+
     if(bValid == 0)
     {
         if(pBuf0 != NULL)
@@ -590,7 +590,7 @@ int LayerQueue3DBuffer(LayerCtrl* l, VideoPicture* pBuf0, VideoPicture* pBuf1, i
             lc->callback(lc->pUserData, MESSAGE_ID_LAYER_RETURN_BUFFER, (void*)pBuf1);
         return 0;
     }
-    
+
     if(lc->bLayerInitialized == 0)
     {
         if(SetLayerParam(lc) != 0)
@@ -598,13 +598,13 @@ int LayerQueue3DBuffer(LayerCtrl* l, VideoPicture* pBuf0, VideoPicture* pBuf1, i
             loge("can not initialize layer.");
             return -1;
         }
-        
+
         lc->bLayerInitialized = 1;
-        
+
         if(lc->eDisplay3DMode != DISPLAY_3D_MODE_2D || lc->ePicture3DMode != PICTURE_3D_MODE_NONE)
            LayerSetDisplay3DMode(l, lc->eDisplay3DMode);
     }
-    
+
     if(pBuf0->nWidth != lc->nWidth ||
        pBuf0->nHeight != lc->nHeight ||
        pBuf0->ePixelFormat != lc->eReceivePixelFormat)
@@ -612,7 +612,7 @@ int LayerQueue3DBuffer(LayerCtrl* l, VideoPicture* pBuf0, VideoPicture* pBuf1, i
         //* config the display hardware again.
         //* TODO.
     }
-    
+
     //* set picture to display hardware.
     setHwcLayerPictureInfo(lc, &layerInfo, pBuf0, pBuf1);
     args[0] = DISPLAY_CHANNEL;
@@ -620,18 +620,18 @@ int LayerQueue3DBuffer(LayerCtrl* l, VideoPicture* pBuf0, VideoPicture* pBuf1, i
     args[2] = (unsigned long)(&layerInfo);
     args[3] = 0;
     ioctl(lc->fdDisplay, DISP_CMD_LAYER_SET_INFO, args);
-    
+
     //* wait for new frame showed.
     if(lc->bLayerShowed == 1)
     {
         int nCurFrameId;
         int nWaitTime;
-        
+
         args[0] = DISPLAY_CHANNEL;
         args[1] = DISPLAY_LAYER;
         args[2] = 0;
         args[3] = 0;
-        
+
         nWaitTime = 50000;  //* max frame interval is 1000/24fps = 41.67ms, here we wait 50ms for max.
         do
         {
@@ -653,7 +653,7 @@ int LayerQueue3DBuffer(LayerCtrl* l, VideoPicture* pBuf0, VideoPicture* pBuf1, i
             }
         }while(1);
     }
-    
+
     //* attach the new picture to list and return the old picture.
     newNode = NULL;
     for(i=0; i<32; i++)
@@ -668,13 +668,13 @@ int LayerQueue3DBuffer(LayerCtrl* l, VideoPicture* pBuf0, VideoPicture* pBuf1, i
             break;
         }
     }
-    
+
     if(i == 32)
     {
         loge("not enough picture nodes, shouldn't run here.");
         abort();
     }
-    
+
     if(lc->pPictureListHead != NULL)
     {
         nodePtr = lc->pPictureListHead;
@@ -684,10 +684,10 @@ int LayerQueue3DBuffer(LayerCtrl* l, VideoPicture* pBuf0, VideoPicture* pBuf1, i
             i++;
             nodePtr = nodePtr->pNext;
         }
-        
+
         nodePtr->pNext = newNode;
         i++;
-        
+
         //* return one picture.
         while(i > NUM_OF_PICTURES_KEEP_IN_LIST)
         {
@@ -708,7 +708,7 @@ int LayerQueue3DBuffer(LayerCtrl* l, VideoPicture* pBuf0, VideoPicture* pBuf1, i
     {
         lc->pPictureListHead = newNode;
     }
-    
+
     return 0;
 }
 
@@ -718,7 +718,7 @@ static int SetLayerParam(LayerCtrlContext* lc)
     disp_pixel_format pixelFormat;
     disp_layer_info   layerInfo;
     unsigned long     args[4];
-    
+
     //* close the layer first, otherwise, in case when last frame is kept showing,
     //* the picture showed will not valid because parameters changed.
     logv("Set layer param.");
@@ -729,7 +729,7 @@ static int SetLayerParam(LayerCtrlContext* lc)
     args[2] = 0;
     args[3] = 0;
     ioctl(lc->fdDisplay, DISP_CMD_LAYER_DISABLE, args);
-    
+
     //* transform pixel format.
     switch(lc->eReceivePixelFormat)
     {
@@ -762,7 +762,7 @@ static int SetLayerParam(LayerCtrlContext* lc)
     args[2] = (unsigned long)(&layerInfo);
     args[3] = 0;
     ioctl(lc->fdDisplay, DISP_CMD_LAYER_GET_INFO, args);
-    
+
     layerInfo.mode        = DISP_LAYER_WORK_MODE_SCALER;
     layerInfo.alpha_mode  = 1;
     layerInfo.alpha_value = 0xff;
@@ -794,14 +794,14 @@ static int SetLayerParam(LayerCtrlContext* lc)
     args[2] = (unsigned long)(&layerInfo);
     args[3] = 0;
     ioctl(lc->fdDisplay, DISP_CMD_LAYER_SET_INFO, args);
-	
+
     //* set the video layer to the top.
     args[0] = DISPLAY_CHANNEL;
     args[1] = DISPLAY_LAYER;
     args[2] = 0;
     args[3] = 0;
     ioctl(lc->fdDisplay, DISP_CMD_LAYER_TOP, args);
-    
+
     return 0;
 }
 
@@ -818,7 +818,7 @@ static void setHwcLayerPictureInfo(LayerCtrlContext* lc,
     args[2] = (unsigned long)pLayerInfo;
     args[3] = 0;
     ioctl(lc->fdDisplay, DISP_CMD_LAYER_GET_INFO, args);
-    
+
     if(pSecondPictureOf3D == NULL)
     {
         pLayerInfo->id         = pPicture->nID;
@@ -835,10 +835,10 @@ static void setHwcLayerPictureInfo(LayerCtrlContext* lc,
         pLayerInfo->fb.trd_right_addr[1] = (unsigned long)MemAdapterGetPhysicAddressCpu(pSecondPictureOf3D->pData1);
         //* should we set the address fb.addr[2] according to the pixel format?
     }
-    
+
     //* set layer info
     ioctl(lc->fdDisplay, DISP_CMD_LAYER_SET_INFO, args);
-    
+
     return;
 }
 
@@ -899,11 +899,11 @@ int LayerCtrlHoldLastPicture(LayerCtrl* l, int bHold)
     LayerCtrlContext* lc;
     VPictureNode*     nodePtr;
     unsigned long     args[4];
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("LayerCtrlHoldLastPicture, bHold = %d", bHold);
-    
+
     if(bHold == 0)
     {
         if(gLastPicture != NULL)
@@ -913,9 +913,9 @@ int LayerCtrlHoldLastPicture(LayerCtrl* l, int bHold)
         }
         return 0;
     }
-    
+
     VideoPicture* lastPicture;
-        
+
     lastPicture = NULL;
     nodePtr = lc->pPictureListHead;
     if(nodePtr != NULL)
@@ -924,27 +924,27 @@ int LayerCtrlHoldLastPicture(LayerCtrl* l, int bHold)
             nodePtr = nodePtr->pNext;
         lastPicture = nodePtr->pPicture;
     }
-        
+
     if(lastPicture != NULL)
     {
         if(gLastPicture != NULL)
             FreePictureBuffer(gLastPicture);
-        
+
         gLastPicture = AllocatePictureBuffer(lastPicture->nWidth,
                                              lastPicture->nHeight,
                                              lastPicture->nLineStride,
                                              lastPicture->ePixelFormat);
-        logd("width = %d, height = %d, pdata0 = %p", 
+        logd("width = %d, height = %d, pdata0 = %p",
             gLastPicture->nWidth, gLastPicture->nHeight, gLastPicture->pData0);
         if(gLastPicture != NULL)
         {
             disp_layer_info layerInfo;
-            
+
             gLastPicture->nID = 0xa5a5a5a5;
             int nGpuYAlign = 16;
             int nGpuCAlign = 8;
             RotatePicture(lastPicture, gLastPicture, 0,nGpuYAlign,nGpuCAlign);
-    
+
             //* set picture to display hardware.
             setHwcLayerPictureInfo(lc, &layerInfo, gLastPicture, NULL);
             args[0] = DISPLAY_CHANNEL;
@@ -952,18 +952,18 @@ int LayerCtrlHoldLastPicture(LayerCtrl* l, int bHold)
             args[2] = (unsigned long)(&layerInfo);
             args[3] = 0;
             ioctl(lc->fdDisplay, DISP_CMD_LAYER_SET_INFO, args);
-                                       
+
             //* wait for new frame showed.
             if(lc->bLayerShowed == 1)
             {
                 int nCurFrameId;
                 int nWaitTime;
-        
+
                 args[0] = DISPLAY_CHANNEL;
                 args[1] = DISPLAY_LAYER;
                 args[2] = 0;
                 args[3] = 0;
-                
+
                 nWaitTime = 50000;  //* max frame interval is 1000/24fps = 41.67ms, here we wait 50ms for max.
                 do
                 {
@@ -987,6 +987,6 @@ int LayerCtrlHoldLastPicture(LayerCtrl* l, int bHold)
             }
         }
     }
-    
+
     return 0;
 }

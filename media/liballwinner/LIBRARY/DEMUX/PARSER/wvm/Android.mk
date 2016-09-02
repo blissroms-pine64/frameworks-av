@@ -20,7 +20,7 @@ LOCAL_C_INCLUDES:= \
     $(LOCAL_PATH)/../../../CODEC/SUBTITLE/DECODER/include \
     $(TOP)/frameworks/av/include \
     $(TOP)/frameworks/av/media/libstagefright
-		
+
 LOCAL_MODULE_TAGS := optional
 LOCAL_PRELINK_MODULE := false
 
@@ -38,8 +38,9 @@ LOCAL_SHARED_LIBRARIES := \
         libdrmframework \
         libdl \
         libutils \
-        libMemAdapter
-        
+        libMemAdapter \
+				libmedia
+
 LOCAL_MODULE:=libaw_wvm
 
 ifeq ($(TARGET_ARCH),arm)
@@ -47,4 +48,3 @@ ifeq ($(TARGET_ARCH),arm)
 endif
 
 include $(BUILD_SHARED_LIBRARY)
-

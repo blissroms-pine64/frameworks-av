@@ -11,7 +11,7 @@
 #include <private/media/VideoFrame.h>
 #include "vencoder.h"  //* video encode library in "LIBRARY/CODEC/VIDEO/ENCODER"
 
-#if( CONFIG_OS_VERSION >= OPTION_OS_VERSION_ANDROID_5_0)   
+#if( CONFIG_OS_VERSION >= OPTION_OS_VERSION_ANDROID_5_0)
 #include "media/CharacterEncodingDetector.h"
 #endif
 
@@ -93,8 +93,8 @@ void AwMetadataRetriever::clear()
 {
     //* set mCancelPrepareFlag to force the CdxParserPrepare() quit.
     //* this can prevend the setDataSource() operation from blocking at a network io.
-    //* but the retriever's setDataSource() method is a synchronize operation, so I think 
-    //* this take no effect, because user can not return from setDataSource() to call this 
+    //* but the retriever's setDataSource() method is a synchronize operation, so I think
+    //* this take no effect, because user can not return from setDataSource() to call this
     //* method if user's thread is blocked at the setDataSource() operation.
 	if(mParser)
 	{
@@ -109,25 +109,25 @@ void AwMetadataRetriever::clear()
         CdxStreamClose(mStream);
 		mStream = NULL;
 	}
-        
+
     if(mVideoDecoder != NULL)
     {
         DestroyVideoDecoder(mVideoDecoder);
         mVideoDecoder = NULL;
     }
-	
+
 	if(mAlbumArtPic != NULL)
 	{
 		delete mAlbumArtPic;
 		mAlbumArtPic = NULL;
 	}
-    
+
     clearDataSourceFields(&mSource);
     memset(&mMediaInfo, 0, sizeof(CdxMediaInfoT));
     mMetaData.clear();
-#if MediaScanDedug	
+#if MediaScanDedug
 	mFd = -1;
-#endif	
+#endif
     return;
 }
 
@@ -145,7 +145,7 @@ status_t AwMetadataRetriever::setDataSource(const char* pUrl, const KeyedVector<
 
     logd("set data source, url = %s", pUrl);
     clear();    //* release parser, decoder and other resource for previous file.
-    
+
     //* 1. set the datasource object.
     if( setDataSourceFields(&mSource, (char*)pUrl, (KeyedVector<String8, String8>*)pHeaders) != 0)
     {
@@ -175,13 +175,13 @@ status_t AwMetadataRetriever::setDataSource(const char* pUrl, const KeyedVector<
 	{
         return UNKNOWN_ERROR;
 	}
-    
+
     //* 3. get media info.
     memset(&mMediaInfo, 0, sizeof(CdxMediaInfoT));
     if(CdxParserGetMediaInfo(mParser, &mMediaInfo) == 0)
 	{
 		if (mParser->type == CDX_PARSER_TS ||
-			mParser->type == CDX_PARSER_BD || 
+			mParser->type == CDX_PARSER_BD ||
 			mParser->type == CDX_PARSER_HLS)
 		{
 			mMediaInfo.program[0].video[0].bIsFramePackage = 0; /* stream package */
@@ -200,13 +200,13 @@ status_t AwMetadataRetriever::setDataSource(const char* pUrl, const KeyedVector<
 status_t AwMetadataRetriever::setDataSource(int fd, int64_t nOffset, int64_t nLength)
 {
     char str[128];
-    
+
     clear();    //* release parser, decoder and other resource for previous file.
     logd("set data source, fd = %d", fd);
-#if MediaScanDedug	
+#if MediaScanDedug
 	mFd = fd;
-#endif	
-    
+#endif
+
     //* 1. set the datasource object.
     clearDataSourceFields(&mSource);
     sprintf(str, "fd://%d?offset=%ld&length=%ld", fd, (long int)nOffset, (long int)nLength);
@@ -216,7 +216,7 @@ status_t AwMetadataRetriever::setDataSource(int fd, int64_t nOffset, int64_t nLe
         loge("initialize media source for parser fail.");
         return NO_MEMORY;
     }
-    
+
     //* 2. create a parser.
 	mStream = CdxStreamCreate(&mSource);
 	if(!mStream)
@@ -240,13 +240,13 @@ status_t AwMetadataRetriever::setDataSource(int fd, int64_t nOffset, int64_t nLe
 	{
         return UNKNOWN_ERROR;
 	}
-    
+
     //* 3. get media info.
     memset(&mMediaInfo, 0, sizeof(CdxMediaInfoT));
     if(CdxParserGetMediaInfo(mParser, &mMediaInfo) == 0)
 	{
 		if (mParser->type == CDX_PARSER_TS ||
-			mParser->type == CDX_PARSER_BD || 
+			mParser->type == CDX_PARSER_BD ||
 			mParser->type == CDX_PARSER_HLS)
 		{
 			mMediaInfo.program[0].video[0].bIsFramePackage = 0; /* stream package */
@@ -257,7 +257,7 @@ status_t AwMetadataRetriever::setDataSource(int fd, int64_t nOffset, int64_t nLe
 		}
         storeMetadata();
 	}
-    
+
     return OK;
 }
 
@@ -286,7 +286,7 @@ void AwMetadataRetriever::storeMetadata(void)
 		memcpy(mAlbumArtPic->mData,mMediaInfo.pAlbumArtBuf,mMediaInfo.nAlbumArtBufSize);
 #endif
 	}
-	
+
     //* /**
     //*  * The metadata key to retrieve the numeric string describing the
     //*  * order of the audio data source on its original recording.
@@ -294,12 +294,12 @@ void AwMetadataRetriever::storeMetadata(void)
     //* public static final int METADATA_KEY_CD_TRACK_NUMBER = 0;
 #if 0
     mMetaData.add(METADATA_KEY_CD_TRACK_NUMBER, String8("0"));
-    //* no information to give the order of the audio 
+    //* no information to give the order of the audio
     //* ogg file may contain this information in its vorbis comment, index by tag "TRACKNUMBER";
     //* mp3 file may contain this information in its metadata, index by tag "TRK" or "TRCK";
     //* mov file may contain this information in its metadata, index by FOURCC 't' 'r' 'k' 'n';
 #endif
-    
+
     //* /**
     //*  * The metadata key to retrieve the information about the album title
     //*  * of the data source.
@@ -317,7 +317,7 @@ void AwMetadataRetriever::storeMetadata(void)
     //* ogg file may contain this information in its vorbis comment, index by tag "ALBUM";
     //* mp3 file may contain this information in its metadata, index by tag "TALB" or "TAL";
     //* mov file may contain this information in its metadata, index by FOURCC 0xa9 'a' 'l' 'b';
-    
+
     //* /**
     //*  * The metadata key to retrieve the information about the artist of
     //*  * the data source.
@@ -394,7 +394,7 @@ void AwMetadataRetriever::storeMetadata(void)
     //* ogg file may contain this information in its vorbis comment, index by tag "GENRE";
     //* mp3 file may contain this information in its metadata, index by tag "TCON" or "TCO";
     //* mov file may contain this information in its metadata, index by FOURCC 'gnre' or "0xa9 'g' 'e' 'n'";
-    //* for mov, iTunes genre codes are the standard id3 codes, except they start at 1 instead of 0 
+    //* for mov, iTunes genre codes are the standard id3 codes, except they start at 1 instead of 0
     //* (e.g. Pop is 14, not 13), if you use standard id3 numbering, you should subtract 1.
 
     //* /**
@@ -441,7 +441,7 @@ void AwMetadataRetriever::storeMetadata(void)
         sprintf(tmp, "%d", mMediaInfo.program[mMediaInfo.programIndex].duration);
         mMetaData.add(METADATA_KEY_DURATION, String8(tmp));
     }
-    
+
     //* /**
     //*  * The metadata key to retrieve the number of tracks, such as audio, video,
     //*  * text, in the data source, such as a mp4 or 3gpp file.
@@ -455,7 +455,7 @@ void AwMetadataRetriever::storeMetadata(void)
         sprintf(tmp, "%d", nTrackCount);
         mMetaData.add(METADATA_KEY_NUM_TRACKS, String8(tmp));
     }
-    
+
     //* /**
     //*  * The metadata key to retrieve the information of the writer (such as
     //*  * lyricist) of the data source.
@@ -467,7 +467,7 @@ void AwMetadataRetriever::storeMetadata(void)
     //* ogg file may contain this information in its vorbis comment, index by tag "LYRICIST";
     //* mov file may contain this information in its metadata, index by FOURCC "0xa9 'w' 'r' 't'";
 #endif
-    
+
     //* /**
     //*  * The metadata key to retrieve the mime type of the data source. Some
     //*  * example mime types include: "video/mp4", "audio/mp4", "audio/amr-wb",
@@ -740,7 +740,7 @@ void AwMetadataRetriever::storeMetadata(void)
         #endif
     }
 
-    
+
     //* /**
     //*  * The metadata key to retrieve the information about the performers or
     //*  * artist associated with the data source.
@@ -790,7 +790,7 @@ void AwMetadataRetriever::storeMetadata(void)
         if(mMediaInfo.program[mMediaInfo.programIndex].audioNum > 0)
             mMetaData.add(METADATA_KEY_HAS_AUDIO, String8("yes"));
     }
-    
+
     //* /**
     //*  * If this key exists the media contains video content.
     //*  */
@@ -802,7 +802,7 @@ void AwMetadataRetriever::storeMetadata(void)
         if(mMediaInfo.program[mMediaInfo.programIndex].videoNum > 0)
             mMetaData.add(METADATA_KEY_HAS_VIDEO, String8("yes"));
     }
-    
+
     //* /**
     //*  * If the media contains video, this key retrieves its width.
     //*  */
@@ -815,7 +815,7 @@ void AwMetadataRetriever::storeMetadata(void)
             mMetaData.add(METADATA_KEY_VIDEO_WIDTH, String8(tmp));
         }
     }
-    
+
     //* /**
     //*  * If the media contains video, this key retrieves its height.
     //*  */
@@ -829,7 +829,7 @@ void AwMetadataRetriever::storeMetadata(void)
             mMetaData.add(METADATA_KEY_VIDEO_HEIGHT, String8(tmp));
         }
     }
-    
+
     //* /**
     //*  * This key retrieves the average bitrate (in bits/sec), if available.
     //*  */
@@ -858,17 +858,17 @@ void AwMetadataRetriever::storeMetadata(void)
             {
                 if(i != 0)
                     sprintf(buffer, "%s:", tmp);   //* add a ":".
-                
+
                 len = strlen((const char*)mMediaInfo.program[mMediaInfo.programIndex].subtitle[i].strLang);
                 if(len == 0)
                     len = strlen("unknown");
-                
+
                 if(len + strlen(tmp) >= (sizeof(tmp)-1))
                 {
                     logw("can not set the language of subtitle correctly, cause of string too long");
                     break;  //* for save.
                 }
-                
+
                 if(strlen((const char*)mMediaInfo.program[mMediaInfo.programIndex].subtitle[i].strLang) > 0)
                     sprintf(buffer, "%s%s", tmp, mMediaInfo.program[mMediaInfo.programIndex].subtitle[i].strLang);
                 else
@@ -877,7 +877,7 @@ void AwMetadataRetriever::storeMetadata(void)
             mMetaData.add(METADATA_KEY_TIMED_TEXT_LANGUAGES, String8(buffer));
         }
     }
-        
+
     //* /**
     //*  * If this key exists the media is drm-protected.
     //*  * @hide
@@ -895,7 +895,7 @@ void AwMetadataRetriever::storeMetadata(void)
     //*  * of 180 degrees will be retrieved as "-90.0000+180.0000", for instance.
     //*  */
     //* public static final int METADATA_KEY_LOCATION        = 23;
-    
+
     //* set the location info
     //* we should not add it when the nStrlen is 0
     nStrLen = strlen((const char*)mMediaInfo.location);
@@ -907,7 +907,7 @@ void AwMetadataRetriever::storeMetadata(void)
     //*  * The video rotation angle may be 0, 90, 180, or 270 degrees.
     //*  */
     //* public static final int METADATA_KEY_VIDEO_ROTATION = 24;
-    
+
     //* set rotation info
     //* mov parser can get the rotate angle.
     //* we should not add it when the nStrlen is 0
@@ -921,7 +921,7 @@ void AwMetadataRetriever::storeMetadata(void)
 
 const char* AwMetadataRetriever::extractMetadata(int keyCode)
 {
-    //* keyCode is defined in "android/framworks/av/include/media/mediametadataretriever.h" and 
+    //* keyCode is defined in "android/framworks/av/include/media/mediametadataretriever.h" and
     //* "android/frameworks/base/media/java/android/media/mediametadataretriever.java".
     //* keyCodes list here.
     //* /**
@@ -1046,9 +1046,9 @@ const char* AwMetadataRetriever::extractMetadata(int keyCode)
     //*  * The video rotation angle may be 0, 90, 180, or 270 degrees.
     //*  */
     //* public static final int METADATA_KEY_VIDEO_ROTATION = 24;
-    
+
     int index;
-    const char* strMetadataName[] = 
+    const char* strMetadataName[] =
     {
         "CD_TRACK_NUMBER",      "ALBUM",                "ARTIST",           "AUTHOR",
         "CD_TRACK_COMPOSER",    "DATE",                 "GENRE",            "TITLE",
@@ -1058,7 +1058,7 @@ const char* AwMetadataRetriever::extractMetadata(int keyCode)
         "BITRATE",              "TIMED_TEXT_LANGUAGES", "IS_DRM",           "LOCATION",
         "VIDEO_ROTATION"
     };
-    
+
     index = mMetaData.indexOfKey(keyCode);
     if (index < 0)
     {
@@ -1134,11 +1134,11 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 
 	//* FIXME:
 	//* if it is a media file with drm protection, we should not return an album art picture.
-	
+
 	bDone = 0;
 	bHasVideo = 0;
 	memset(&vconfig, 0, sizeof(VConfig));
-	
+
 	//* 1. check whether there is a video stream.
 	if(mMediaInfo.programIndex >= 0 && mMediaInfo.programNum >= mMediaInfo.programIndex)
 	{
@@ -1173,19 +1173,19 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 	{
 		goto NEED_EXIT;
 	}
-	
+
 	//* 3. create a video decoder.
 	if(mVideoDecoder == NULL)
 	{
 		mVideoDecoder = CreateVideoDecoder();
 		//* use decoder to capture thumbnail, decoder use less memory in this mode.
 		vconfig.bThumbnailMode		= 0;
-		
+
 		//* all decoder support YUV_MB32_420 format.
 		vconfig.eOutputPixelFormat	= PIXEL_FORMAT_NV21;
 		//* no need to decode two picture when decoding a thumbnail picture.
 		vconfig.bDisable3D			= 1;
-		
+
 		vconfig.nAlignStride        = 16;//* set align stride to 16 as defualt
 #if 1
         //* set this flag when the parser can give this info, mov files recorded by iphone or android phone
@@ -1194,7 +1194,7 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
         //* set the rotation
 		int nRotateDegree;
 		int nRotation = atoi((const char*)mMediaInfo.rotate);
-		
+
 		if(nRotation == 0)
 		   nRotateDegree = 0;
 		else if(nRotation == 90)
@@ -1246,13 +1246,13 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 			else if(mMediaInfo.program[mMediaInfo.programIndex].video[0].nHeight > 480)
 				nVerticalScaleRatio = 1; //* scale down to 1/2 the original height;
 		}
-		
+
 		//* set to the same scale ratio.
 		if(nVerticalScaleRatio > nHorizonScaleRatio)
 			nHorizonScaleRatio = nVerticalScaleRatio;
 		else
 			nVerticalScaleRatio = nHorizonScaleRatio;
-		
+
 		//* set scale ratio to vconfig.
 		if(nHorizonScaleRatio || nVerticalScaleRatio)
 		{
@@ -1260,7 +1260,7 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 			vconfig.nHorizonScaleDownRatio	= nHorizonScaleRatio;
 			vconfig.nVerticalScaleDownRatio = nVerticalScaleRatio;
 		}
-		
+
 		//* initialize the decoder.
         vconfig.nDeInterlaceHoldingFrameBufferNum = 0;//*not use deinterlace
         vconfig.nDisplayHoldingFrameBufferNum     = 0;//*gpu and decoder not share buffer
@@ -1272,7 +1272,7 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 			goto NEED_EXIT;
 		}
 	}
- 
+
 	//* 4. seek parser to the specific position.
 	if(mMediaInfo.bSeekable && timeUs != 0 && timeUs < ((int64_t)mMediaInfo.program[mMediaInfo.programIndex].duration*1000))
 	{
@@ -1285,7 +1285,7 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 		//* here we process all case as option = 0.
 		if(CdxParserSeekTo(mParser, timeUs) != 0)
 		{
-			loge("can not seek media file to the specific time %lld us.", timeUs);
+			loge("can not seek media file to the specific time %lld us.", (long long)timeUs);
 			goto NEED_EXIT;
 		}
 	}
@@ -1293,11 +1293,11 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 	{
 		logw("media file do not support seek operation, get frame from the begin.");
 	}
-	
+
 	//* 5. loop to get bitstream.
 	nStartTime	 = GetSysTime();
 	do
-	{	
+	{
 		while(VideoStreamFrameNum(mVideoDecoder, 0) < 4)
 		{
 			//* 5.1 prefetch packet type and packet data size.
@@ -1307,18 +1307,18 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 				bDone = 1;
 				goto EOS_EXIT;
 			}
-			
+
 			//* 5.2 feed data to the video decoder.
 			if(packet.type == CDX_MEDIA_VIDEO && (packet.flags&MINOR_STREAM)==0)
 			{
-				ret = RequestVideoStreamBuffer(mVideoDecoder, 
-											   packet.length, 
-											   (char**)&packet.buf, 
+				ret = RequestVideoStreamBuffer(mVideoDecoder,
+											   packet.length,
+											   (char**)&packet.buf,
 											   &packet.buflen,
 											   (char**)&packet.ringBuf,
 											   &packet.ringBufLen,
 											   0);
-				
+
 				if(ret==0 && (packet.buflen+packet.ringBufLen)>=packet.length)
 				{
 					if(CdxParserRead(mParser, &packet) == 0)
@@ -1345,7 +1345,7 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 				{
 					//* no buffer, may be the decoder is full of stream.
 					logw("waiting for stream buffer.");
-					
+
 					bDone = 1;
 					goto EOS_EXIT;
 				}
@@ -1380,11 +1380,11 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 					bDone = 1;
 					goto EOS_EXIT;
 				}
-			}			
+			}
 		}
 
 		logv("stream number: %d", VideoStreamFrameNum(mVideoDecoder, 0));
-		
+
 		//* 5.3 decode stream.
 		ret = DecodeVideoStream(mVideoDecoder, 0 /*eos*/, 0/*key frame only*/, 0/*drop b frame*/, 0/*current time*/);
 
@@ -1400,7 +1400,7 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 			bDone = 1;
 			break;
 		}
-		
+
 		//* 5.4 try to get a picture from the decoder and encode it.
 		if(ret == VDECODE_RESULT_FRAME_DECODED || ret == VDECODE_RESULT_KEYFRAME_DECODED)
 		{
@@ -1411,8 +1411,8 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 				int enc_width  = 0;
 				int enc_height = 0;
 				if(bEncoderInited == 0)
-				{	
-					
+				{
+
 					//* h264 param
 					memset(&h264Param, 0, sizeof(VencH264Param));
 					h264Param.bEntropyCodingCABAC = 1;
@@ -1423,7 +1423,7 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 					h264Param.sProfileLevel.nLevel = VENC_H264Level31;
 					h264Param.sQPRange.nMinqp = 20;
 					h264Param.sQPRange.nMaxqp = 40;
-					
+
 					VideoEncSetParameter(pVideoEncoder, VENC_IndexParamH264Param, &h264Param);
 
 					if(pPicture->nFrameRate > 20000)
@@ -1479,7 +1479,7 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 
 					VideoEncGetParameter(pVideoEncoder, VENC_IndexParamH264SPSPPS, &spsppsInfo);
 
-					
+
 					if(spsppsInfo.pBuffer != 0 && (spsppsInfo.nLength + 8 <= MAX_OUTPUT_STREAM_SIZE))
 					{
 						int frameRate =  h264Param.nFramerate*1000;
@@ -1487,7 +1487,7 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 						pOutBuf[bBitStreamLength++] = 'h';
 						pOutBuf[bBitStreamLength++] = 'u';
 						pOutBuf[bBitStreamLength++] = 'm';
-						
+
 						pOutBuf[bBitStreamLength++]	= frameRate		& 0xff;
 						pOutBuf[bBitStreamLength++]	= (frameRate>>8) & 0xff;
 						pOutBuf[bBitStreamLength++]	= (frameRate>>16) & 0xff;
@@ -1527,7 +1527,7 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 			            enc_height = pPicture->nHeight;
 			        }
 
-					
+
 					memset(&sInputBuffer, 0, sizeof(VencInputBuffer));
 					sInputBuffer.pAddrPhyY = (unsigned char*)MemAdapterGetPhysicAddressCpu(pPicture->pData0);
 					sInputBuffer.pAddrPhyC = (unsigned char*)MemAdapterGetPhysicAddressCpu(pPicture->pData1);
@@ -1539,12 +1539,12 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 						sInputBuffer.sCropInfo.nLeft  = pPicture->nLeftOffset;
 						sInputBuffer.sCropInfo.nTop   = pPicture->nTopOffset ;
 					}
-					
+
 
 					AddOneInputBuffer(pVideoEncoder, &sInputBuffer);
 					ret = VideoEncodeOneFrame(pVideoEncoder);
 					if(ret != VENC_RESULT_OK)
-					{	
+					{
 						loge("encoder error");
 						goto NEED_EXIT;
 					}
@@ -1555,7 +1555,7 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 					if((sOutputBuffer.nSize0 + sOutputBuffer.nSize1 + 4) <= MAX_OUTPUT_STREAM_SIZE)
 					{
 						int frameSize = sOutputBuffer.nSize0 + sOutputBuffer.nSize1;
-						
+
 						pOutBuf[bBitStreamLength++]	= frameSize & 0xff;
 						pOutBuf[bBitStreamLength++]	= (frameSize>>8) & 0xff;
 						pOutBuf[bBitStreamLength++]	= (frameSize>>16) & 0xff;
@@ -1579,11 +1579,11 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 #endif
 					FreeOneBitStreamFrame(pVideoEncoder, &sOutputBuffer);
 				}
-				
+
 				ReturnPicture(mVideoDecoder, pPicture);
 			}
 		}
-		
+
 		//* check whether cost too long time or process too much packets.
 		nTimePassed = GetSysTime() - nStartTime;
 		if(nTimePassed > MAX_TIME_TO_GET_A_STREAM)
@@ -1598,7 +1598,7 @@ sp<IMemory> AwMetadataRetriever::getStreamAtTime(int64_t timeUs)
 			bDone = 1;
 			break;
 		}
-		
+
 	}while(!bDone);
 
 
@@ -1674,19 +1674,19 @@ VideoFrame *AwMetadataRetriever::getFrameAtTime(int64_t timeUs, int option)
     int               nPacketCount;
     int64_t           nStartTime;
     int64_t           nTimePassed;
-    
+
     //* FIXME:
     //* if it is a media file with drm protection, we should not return an album art picture.
-#if MediaScanDedug	
+#if MediaScanDedug
 	logd("getFrameAtTime, mFd=%d", mFd);
-#endif	
+#endif
 	CEDARX_UNUSE(option);
 
     bDone = 0;
     bSuccess = 0;
     bHasVideo = 0;
     memset(&vconfig, 0, sizeof(VConfig));
-    
+
     //* 1. check whether there is a video stream.
     if(mMediaInfo.programIndex >= 0 && mMediaInfo.programNum >= mMediaInfo.programIndex)
     {
@@ -1698,7 +1698,7 @@ VideoFrame *AwMetadataRetriever::getFrameAtTime(int64_t timeUs, int option)
         logw("media file do not contain a video stream, getFrameAtTime() return fail.");
         return NULL;
     }
-    
+
     //* 2. create a video decoder.
     if(mVideoDecoder == NULL)
     {
@@ -1776,7 +1776,7 @@ VideoFrame *AwMetadataRetriever::getFrameAtTime(int64_t timeUs, int option)
             nHorizonScaleRatio = nVerticalScaleRatio;
         else
             nVerticalScaleRatio = nHorizonScaleRatio;
-        
+
         //* set scale ratio to vconfig.
         if(nHorizonScaleRatio || nVerticalScaleRatio)
         {
@@ -1784,7 +1784,7 @@ VideoFrame *AwMetadataRetriever::getFrameAtTime(int64_t timeUs, int option)
             vconfig.nHorizonScaleDownRatio  = nHorizonScaleRatio;
             vconfig.nVerticalScaleDownRatio = nVerticalScaleRatio;
         }
-        
+
         //* initialize the decoder.
         vconfig.nDeInterlaceHoldingFrameBufferNum = 0;//*not use deinterlace
         vconfig.nDisplayHoldingFrameBufferNum     = 0;//*gpu and decoder not share buffer
@@ -1796,10 +1796,10 @@ VideoFrame *AwMetadataRetriever::getFrameAtTime(int64_t timeUs, int option)
             return NULL;
         }
     }
-    
+
     if(timeUs < 0)
     {
-		//The key frame of MKV always at the end of file, need reset to 0, 
+		//The key frame of MKV always at the end of file, need reset to 0,
 		//otherwise will return mix thumbnail
 		if(mParser->type == CDX_PARSER_MKV)
 		{
@@ -1828,7 +1828,7 @@ VideoFrame *AwMetadataRetriever::getFrameAtTime(int64_t timeUs, int option)
         //* here we process all case as option = 0.
         if(CdxParserSeekTo(mParser, timeUs) != 0)
         {
-            loge("can not seek media file to the specific time %lld us.", timeUs);
+            loge("can not seek media file to the specific time %lld us.", (long long)timeUs);
             return NULL;
         }
     }
@@ -1836,7 +1836,7 @@ VideoFrame *AwMetadataRetriever::getFrameAtTime(int64_t timeUs, int option)
     {
         logw("media file do not support seek operation, get frame from the begin.");
     }
-    
+
     //* 4. loop to decode a picture.
     nPacketCount = 0;
     nStartTime   = GetSysTime();
@@ -1851,18 +1851,18 @@ VideoFrame *AwMetadataRetriever::getFrameAtTime(int64_t timeUs, int option)
             bSuccess = 0;
             break;
         }
-        
+
         //* 4.2 feed data to the video decoder.
         if(packet.type == CDX_MEDIA_VIDEO && (packet.flags&MINOR_STREAM)==0)
         {
-            ret = RequestVideoStreamBuffer(mVideoDecoder, 
-                                           packet.length, 
-                                           (char**)&packet.buf, 
+            ret = RequestVideoStreamBuffer(mVideoDecoder,
+                                           packet.length,
+                                           (char**)&packet.buf,
                                            &packet.buflen,
                                            (char**)&packet.ringBuf,
                                            &packet.ringBufLen,
                                            0);
-            
+
             if(ret==0 && (packet.buflen+packet.ringBufLen)>=packet.length)
             {
                 nPacketCount++;
@@ -1912,7 +1912,7 @@ VideoFrame *AwMetadataRetriever::getFrameAtTime(int64_t timeUs, int option)
                 else
                 {
                 	free(packet.buf);
-					
+
                     //* read data fail, may be data error.
                     loge("read packet from parser fail.");
                     bDone = 1;
@@ -1928,7 +1928,7 @@ VideoFrame *AwMetadataRetriever::getFrameAtTime(int64_t timeUs, int option)
                 break;
             }
         }
-        
+
         //* 4.3 decode stream.
         ret = DecodeVideoStream(mVideoDecoder, 0 /*eos*/, 0/*key frame only*/, 0/*drop b frame*/, 0/*current time*/);
 
@@ -1945,7 +1945,7 @@ VideoFrame *AwMetadataRetriever::getFrameAtTime(int64_t timeUs, int option)
             ReopenVideoEngine(mVideoDecoder, &vconfig, &mMediaInfo.program[mMediaInfo.programIndex].video[0]);
             continue;
         }
-        
+
         //* 4.4 try to get a picture from the decoder.
         if(ret == VDECODE_RESULT_FRAME_DECODED || ret == VDECODE_RESULT_KEYFRAME_DECODED)
         {
@@ -1957,7 +1957,7 @@ VideoFrame *AwMetadataRetriever::getFrameAtTime(int64_t timeUs, int option)
                 break;
             }
         }
-        
+
         //* check whether cost too long time or process too much packets.
         nTimePassed = GetSysTime() - nStartTime;
         if(nTimePassed > MAX_TIME_TO_GET_A_FRAME || nTimePassed < 0)
@@ -1975,7 +1975,7 @@ VideoFrame *AwMetadataRetriever::getFrameAtTime(int64_t timeUs, int option)
             break;
         }
     }while(!bDone);
-    
+
     //* 5. transform the picture if suceess to get a picture.
     if(bSuccess)
     {
@@ -1985,7 +1985,7 @@ VideoFrame *AwMetadataRetriever::getFrameAtTime(int64_t timeUs, int option)
             loge("can not allocate memory for video frame.");
             return NULL;
         }
-        
+
         //* let the width and height is multiple of 2, for convinient of yuv to rgb565 converting.
         if(pPicture->nLeftOffset & 1)
             pPicture->nLeftOffset += 1;
@@ -1995,8 +1995,8 @@ VideoFrame *AwMetadataRetriever::getFrameAtTime(int64_t timeUs, int option)
             pPicture->nTopOffset += 1;
         if(pPicture->nBottomOffset & 1)
             pPicture->nBottomOffset -= 1;
-        
-        //* I find that the mpeg2 decoder output the original picture's crop params, 
+
+        //* I find that the mpeg2 decoder output the original picture's crop params,
         //* it is bigger than the scaledown picture's size.
         if((pPicture->nBottomOffset != 0 || pPicture->nRightOffset != 0) &&
             pPicture->nRightOffset <= pPicture->nLineStride)
@@ -2013,7 +2013,7 @@ VideoFrame *AwMetadataRetriever::getFrameAtTime(int64_t timeUs, int option)
             pVideoFrame->mWidth         = pPicture->nWidth;
             pVideoFrame->mHeight        = pPicture->nHeight;
         }
-        
+
         pVideoFrame->mSize = pVideoFrame->mWidth * pVideoFrame->mHeight * 2;    //* for RGB565 pixel format.
         pVideoFrame->mData = new unsigned char[pVideoFrame->mSize];
         if(pVideoFrame->mData == NULL)
@@ -2023,9 +2023,9 @@ VideoFrame *AwMetadataRetriever::getFrameAtTime(int64_t timeUs, int option)
             return NULL;
         }
         pVideoFrame->mRotationAngle = 0;
-        
+
         //* convert pixel format.
-        
+
         if(transformPicture(pPicture, pVideoFrame) < 0)
         {
             delete pVideoFrame;
@@ -2048,9 +2048,9 @@ static int setDataSourceFields(CdxDataSourceT* source, char* uri, KeyedVector<St
     CdxHttpHeaderFieldsT* pHttpHeaders;
     int                   i;
     int                   nHeaderSize;
-    
+
     clearDataSourceFields(source);
-    
+
     if(uri != NULL)
     {
         //* check whether ths uri has a scheme.
@@ -2073,17 +2073,17 @@ static int setDataSourceFields(CdxDataSourceT* source, char* uri, KeyedVector<St
             }
             sprintf(source->uri, "file://%s", uri);
         }
-        
+
         if(pHeaders != NULL && (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)))
         {
             String8 key;
             String8 value;
             char*   str;
-            
+
             i = pHeaders->indexOfKey(String8("x-hide-urls-from-log"));
             if(i >= 0)
                 pHeaders->removeItemsAt(i);
-                
+
             nHeaderSize = pHeaders->size();
             if(nHeaderSize > 0)
             {
@@ -2096,7 +2096,7 @@ static int setDataSourceFields(CdxDataSourceT* source, char* uri, KeyedVector<St
                 }
                 memset(pHttpHeaders, 0, sizeof(CdxHttpHeaderFieldsT));
                 pHttpHeaders->num = nHeaderSize;
-                
+
                 pHttpHeaders->pHttpHeader = (CdxHttpHeaderFieldT*)malloc(sizeof(CdxHttpHeaderFieldT)*nHeaderSize);
                 if(pHttpHeaders->pHttpHeader == NULL)
                 {
@@ -2105,10 +2105,10 @@ static int setDataSourceFields(CdxDataSourceT* source, char* uri, KeyedVector<St
                     clearDataSourceFields(source);
                     return -1;
                 }
-                
+
                 source->extraData = (void*)pHttpHeaders;
                 source->extraDataType = EXTRA_DATA_HTTP_HEADER;
-                
+
                 for(i=0; i<nHeaderSize; i++)
                 {
                     key   = pHeaders->keyAt(i);
@@ -2126,7 +2126,7 @@ static int setDataSourceFields(CdxDataSourceT* source, char* uri, KeyedVector<St
                     }
                     else
                         pHttpHeaders->pHttpHeader[i].key = NULL;
-                    
+
                     str = (char*)value.string();
                     if(str != NULL)
                     {
@@ -2144,7 +2144,7 @@ static int setDataSourceFields(CdxDataSourceT* source, char* uri, KeyedVector<St
             }
         }
     }
-    
+
     return 0;
 }
 
@@ -2154,19 +2154,19 @@ static void clearDataSourceFields(CdxDataSourceT* source)
     CdxHttpHeaderFieldsT* pHttpHeaders;
     int                   i;
     int                   nHeaderSize;
-    
+
     if(source->uri != NULL)
     {
         free(source->uri);
         source->uri = NULL;
     }
-    
+
     if(source->extraDataType == EXTRA_DATA_HTTP_HEADER &&
        source->extraData != NULL)
     {
         pHttpHeaders = (CdxHttpHeaderFieldsT*)source->extraData;
         nHeaderSize  = pHttpHeaders->num;
-        
+
         for(i=0; i<nHeaderSize; i++)
         {
             if(pHttpHeaders->pHttpHeader[i].key != NULL)
@@ -2174,13 +2174,13 @@ static void clearDataSourceFields(CdxDataSourceT* source)
             if(pHttpHeaders->pHttpHeader[i].val != NULL)
                 free((void*)pHttpHeaders->pHttpHeader[i].val);
         }
-        
+
         free(pHttpHeaders->pHttpHeader);
         free(pHttpHeaders);
         source->extraData = NULL;
         source->extraDataType = EXTRA_DATA_UNKNOWN;
     }
-    
+
     return;
 }
 
@@ -2206,17 +2206,17 @@ static int transformPicture(VideoPicture* pPicture, VideoFrame* pVideoFrame)
     int              x;
     unsigned char*   pClipTable;
     unsigned char*   pClip;
-    
+
     static const int nClipMin = -278;
     static const int nClipMax = 535;
-    
+
     if((pPicture->ePixelFormat!= PIXEL_FORMAT_YV12) &&
     		(pPicture->ePixelFormat!= PIXEL_FORMAT_YUV_PLANER_420))
     {
         loge("source pixel format is not YV12, quit.");
         return -1;
     }
-    
+
     //* initialize the clip table.
     pClipTable = (unsigned char*)malloc(nClipMax - nClipMin + 1);
     if(pClipTable == NULL)
@@ -2234,7 +2234,7 @@ static int transformPicture(VideoPicture* pPicture, VideoFrame* pVideoFrame)
     MemAdapterFlushCache(pPicture->pData0, pPicture->nLineStride*pPicture->nHeight);
     MemAdapterFlushCache(pPicture->pData1, pPicture->nLineStride*pPicture->nHeight/4);
     MemAdapterFlushCache(pPicture->pData2, pPicture->nLineStride*pPicture->nHeight/4);
-    
+
     //* set pointers.
     pDst  = (unsigned short*)pVideoFrame->mData;
     pSrcY = (unsigned char*)pPicture->pData0 + pPicture->nTopOffset * pPicture->nLineStride + pPicture->nLeftOffset;
@@ -2294,11 +2294,11 @@ static int transformPicture(VideoPicture* pPicture, VideoFrame* pVideoFrame)
             signed g2_index = (tmp_y2 + v_g_val + u_g_val) / 256;
             signed r2_index = (tmp_y2 + v_r_val) / 256;
 
-            unsigned int rgb1 = ((pClip[r1_index] >> 3) << 11) | 
+            unsigned int rgb1 = ((pClip[r1_index] >> 3) << 11) |
                                 ((pClip[g1_index] >> 2) << 5)  |
                                 ( pClip[b1_index] >> 3);
 
-            unsigned int rgb2 = ((pClip[r2_index] >> 3) << 11) | 
+            unsigned int rgb2 = ((pClip[r2_index] >> 3) << 11) |
                                 ((pClip[g2_index] >> 2) << 5)  |
                                 ( pClip[b2_index] >> 3);
 
@@ -2315,7 +2315,7 @@ static int transformPicture(VideoPicture* pPicture, VideoFrame* pVideoFrame)
 
         pDst += pVideoFrame->mWidth;
     }
-    
+
     free(pClipTable);
 
     return 0;
@@ -2328,8 +2328,8 @@ static int transfromId3Info(String8* mStringId3, cdx_uint8* pData, cdx_int32 nSi
         logd("*** transfromId3Info failed, pData = %p, size = %d",pData,nSize);
         return -1;
     }
-    
-#if( CONFIG_OS_VERSION >= OPTION_OS_VERSION_ANDROID_5_0)    
+
+#if( CONFIG_OS_VERSION >= OPTION_OS_VERSION_ANDROID_5_0)
     cdx_int32   encoding     = nEncodeTpye;
     size_t      nDataLen     = nSize;
     const char* name         = NULL;
@@ -2337,25 +2337,25 @@ static int transfromId3Info(String8* mStringId3, cdx_uint8* pData, cdx_int32 nSi
 
     mStringId3->setTo("");
 
-    if (encoding == 0x00) 
+    if (encoding == 0x00)
     {
         // supposedly ISO 8859-1
         mStringId3->setTo((const char*)(pData), nDataLen);
-    } 
-    else if (encoding == 0x03) 
+    }
+    else if (encoding == 0x03)
     {
         // supposedly UTF-8
         mStringId3->setTo((const char *)(pData), nDataLen);
-    } 
-    else if (encoding == 0x02) 
+    }
+    else if (encoding == 0x02)
     {
         // supposedly UTF-16 BE, no byte order mark.
         // API wants number of characters, not number of bytes...
         int len = nDataLen / 2;
         const char16_t *framedata = (const char16_t *) (pData);
         mStringId3->setTo(framedata, len);
-    } 
-    else if (encoding == 0x01) 
+    }
+    else if (encoding == 0x01)
     {
         // UCS-2
         // API wants number of characters, not number of bytes...
@@ -2364,27 +2364,27 @@ static int transfromId3Info(String8* mStringId3, cdx_uint8* pData, cdx_int32 nSi
 
         // check if the resulting data consists entirely of 8-bit values
         bool eightBit = true;
-        for (int i = 0; i < len; i++) 
+        for (int i = 0; i < len; i++)
         {
-            if (framedata[i] > 0xff) 
+            if (framedata[i] > 0xff)
             {
                 eightBit = false;
                 break;
             }
         }
-        
-        if (eightBit) 
+
+        if (eightBit)
         {
             // collapse to 8 bit, then let the media scanner client figure out the real encoding
             char *frame8 = new char[len];
-            for (int i = 0; i < len; i++) 
+            for (int i = 0; i < len; i++)
             {
                 frame8[i] = framedata[i];
             }
             mStringId3->setTo(frame8, len);
             delete [] frame8;
-        } 
-        else 
+        }
+        else
         {
             mStringId3->setTo(framedata, len);
         }
@@ -2418,19 +2418,19 @@ static int transfromId3Info(String8* mStringId3, cdx_uint8* pData, cdx_int32 nSi
                 }
             }
         }
-    }   
+    }
 	delete pEcodingdetector;
-	
-#endif	
+
+#endif
 	logd("** pDataConvert finish = %s",mStringId3->string());
 #else
     cdx_int32 encoding = nEncodeTpye;
     size_t nDataLen = nSize;
     UErrorCode status = U_ZERO_ERROR;
     String8 srcString;
-    
+
     srcString.setTo("");
-    
+
     if(encoding == 0x00) //why gbk come here ?
     {
     	// supposedly ISO 8859-1
@@ -2447,7 +2447,7 @@ static int transfromId3Info(String8* mStringId3, cdx_uint8* pData, cdx_int32 nSi
 	    // API wants number of characters, not number of bytes...
 	    int len = nDataLen / 2;
 	    const uint16_t *framedata = (const uint16_t *) (pData);
-	
+
 	    srcString.setTo(framedata, len);
     }
     else if(encoding == 0x01)
@@ -2456,7 +2456,7 @@ static int transfromId3Info(String8* mStringId3, cdx_uint8* pData, cdx_int32 nSi
 	    // API wants number of characters, not number of bytes...
 	    int len = nDataLen / 2;
 	    const uint16_t *framedata = (const uint16_t *) (pData);
-	    
+
 	    // check if the resulting data consists entirely of 8-bit values
 	    bool eightBit = true;
 	    for(int i = 0; i < len; i++)
@@ -2467,7 +2467,7 @@ static int transfromId3Info(String8* mStringId3, cdx_uint8* pData, cdx_int32 nSi
 			    break;
 		    }
 	    }
-	    
+
 	    if(eightBit)
 	    {
 	    	// collapse to 8 bit, then let the media scanner client figure out the real encoding
@@ -2484,12 +2484,12 @@ static int transfromId3Info(String8* mStringId3, cdx_uint8* pData, cdx_int32 nSi
 	    	srcString.setTo(framedata, len);
 	    }
 	}
-	
+
     logd("convert before = %s, nDataLen %d",srcString.string(), nDataLen);
-    
+
     //*first we need to untangle the utf8 and convert it back to the original bytes
     // since we are reducing the length of the string, we can do this in place
-    
+
     //*now convert from native encoding to UTF-8
     if(0x00 == nEncodeTpye)
     {
@@ -2510,9 +2510,9 @@ static int transfromId3Info(String8* mStringId3, cdx_uint8* pData, cdx_int32 nSi
         {
             srcEncoding = "GBK";
         }
-    	
+
         logd("ucnv_convert, nEncodeTpye 0x%02x, using %s", nEncodeTpye, srcEncoding);
-    	
+
     	ucnv_convert("UTF-8",
 		    srcEncoding,
 		    utf8Dst,
@@ -2520,14 +2520,14 @@ static int transfromId3Info(String8* mStringId3, cdx_uint8* pData, cdx_int32 nSi
 		    gbkSrc,
 		    gbkLen,
 		    &status);
-		    
+
 	    if(U_FAILURE(status))
 	    {
 		    logw("ucnv_convertEx failed: %d\n", status);
 	    }
-	    
+
 	    logd("convert %s to utf-8 src = %s, dst = %s\n", srcEncoding, gbkSrc, utf8Dst);
-	    
+
 	    mStringId3->setTo("");
 	    mStringId3->setTo((const char*)utf8Dst);
     }
@@ -2544,6 +2544,6 @@ static int transfromId3Info(String8* mStringId3, cdx_uint8* pData, cdx_int32 nSi
 	    mStringId3->setTo((const char*)srcString.string());
     }
 #endif
-    
+
     return 0;
 }
