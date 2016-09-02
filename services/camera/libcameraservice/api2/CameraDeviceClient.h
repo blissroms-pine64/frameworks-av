@@ -131,6 +131,9 @@ public:
     // Prepare stream by preallocating up to maxCount of its buffers
     virtual binder::Status prepare2(int32_t maxCount, int32_t streamId);
 
+    // Prepare stream by preallocating up to maxCount of its buffers
+    virtual status_t      prepare2(int maxCount, int streamId);
+
     /**
      * Interface used by CameraService
      */

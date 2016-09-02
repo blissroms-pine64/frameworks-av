@@ -26,6 +26,10 @@
 #include <binder/AppOpsManager.h>
 #include <binder/BinderService.h>
 #include <binder/IAppOpsCallback.h>
+<<<<<<< HEAD
+=======
+#include <camera/ICameraService.h>
+>>>>>>> aosp6/develop
 #include <camera/ICameraServiceProxy.h>
 #include <hardware/camera.h>
 
@@ -917,6 +921,7 @@ binder::Status CameraService::connectHelper(const sp<CALLBACK>& cameraCb, const 
 
         if ((err = client->initialize(mModule)) != OK) {
             ALOGE("%s: Could not initialize client from HAL module.", __FUNCTION__);
+<<<<<<< HEAD
             // Errors could be from the HAL module open call or from AppOpsManager
             switch(err) {
                 case BAD_VALUE:
@@ -941,6 +946,9 @@ binder::Status CameraService::connectHelper(const sp<CALLBACK>& cameraCb, const 
                             "Failed to initialize camera \"%s\": %s (%d)", cameraId.string(),
                             strerror(-err), err);
             }
+=======
+            return ret;
+>>>>>>> aosp6/develop
         }
 
         // Update shim paremeters for legacy clients

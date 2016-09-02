@@ -207,6 +207,10 @@ status_t WAVExtractor::init() {
                     ALOGW("More than 2 channels (%d) in non-WAVE_EXT, unknown channel mask",
                             mNumChannels);
                 }
+            } else {
+                if (mNumChannels < 1 || mNumChannels > 8) {
+                    return ERROR_UNSUPPORTED;
+                }
             }
 
             mSampleRate = U32_LE_AT(&formatSpec[4]);
@@ -442,7 +446,7 @@ status_t WAVSource::read(
 
     // make sure that maxBytesToRead is multiple of 3, in 24-bit case
     size_t maxBytesToRead =
-        mBitsPerSample == 8 ? kMaxFrameSize / 2 : 
+        mBitsPerSample == 8 ? kMaxFrameSize / 2 :
         (mBitsPerSample == 24 ? 3*(kMaxFrameSize/3): kMaxFrameSize);
 
     size_t maxBytesAvailable =

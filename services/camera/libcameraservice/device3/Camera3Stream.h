@@ -482,10 +482,14 @@ class Camera3Stream :
     size_t mPreparedBufferIdx;
 
     // Number of buffers allocated on last prepare call.
+<<<<<<< HEAD
     size_t mLastMaxCount;
 
     // Outstanding buffers dequeued from the stream's buffer queue.
     List<buffer_handle_t> mOutstandingBuffers;
+=======
+    int mLastMaxCount;
+>>>>>>> aosp6/develop
 
 }; // class Camera3Stream
 

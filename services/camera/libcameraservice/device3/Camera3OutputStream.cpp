@@ -553,6 +553,7 @@ bool Camera3OutputStream::isVideoStream() const {
     return (usage & GRALLOC_USAGE_HW_VIDEO_ENCODER) != 0;
 }
 
+<<<<<<< HEAD
 status_t Camera3OutputStream::setBufferManager(sp<Camera3BufferManager> bufferManager) {
     Mutex::Autolock l(mLock);
     if (mState != STATE_CONSTRUCTED) {
@@ -633,6 +634,8 @@ bool Camera3OutputStream::isConsumedByHWComposer() const {
     return (usage & GRALLOC_USAGE_HW_COMPOSER) != 0;
 }
 
+=======
+>>>>>>> aosp6/develop
 }; // namespace camera3
 
 }; // namespace android

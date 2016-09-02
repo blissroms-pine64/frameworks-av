@@ -146,9 +146,12 @@ class Camera3Device :
 
     virtual status_t tearDown(int streamId);
 
+<<<<<<< HEAD
     virtual status_t addBufferListenerForStream(int streamId,
             wp<camera3::Camera3StreamBufferListener> listener);
 
+=======
+>>>>>>> aosp6/develop
     virtual status_t prepare(int maxCount, int streamId);
 
     virtual uint32_t getDeviceVersion();
@@ -552,6 +555,7 @@ class Camera3Device :
             Vector<camera3_stream_buffer_t> outputBuffers;
             bool                            submitted;
         };
+<<<<<<< HEAD
 
         // Wait for the next batch of requests and put them in mNextRequests. mNextRequests will
         // be empty if it times out.
@@ -565,13 +569,31 @@ class Camera3Device :
         // request batch.
         status_t prepareHalRequests();
 
+=======
+
+        // Wait for the next batch of requests and put them in mNextRequests. mNextRequests will
+        // be empty if it times out.
+        void waitForNextRequestBatch();
+
+        // Waits for a request, or returns NULL if times out. Must be called with mRequestLock hold.
+        sp<CaptureRequest> waitForNextRequestLocked();
+
+        // Prepare HAL requests and output buffers in mNextRequests. Return TIMED_OUT if getting any
+        // output buffer timed out. If an error is returned, the caller should clean up the pending
+        // request batch.
+        status_t prepareHalRequests();
+
+>>>>>>> aosp6/develop
         // Return buffers, etc, for requests in mNextRequests that couldn't be fully constructed and
         // send request errors if sendRequestError is true. The buffers will be returned in the
         // ERROR state to mark them as not having valid data. mNextRequests will be cleared.
         void cleanUpFailedRequests(bool sendRequestError);
+<<<<<<< HEAD
 
         // Stop the repeating request if any of its output streams is abandoned.
         void checkAndStopRepeatingRequest();
+=======
+>>>>>>> aosp6/develop
 
         // Pause handling
         bool               waitIfPaused();

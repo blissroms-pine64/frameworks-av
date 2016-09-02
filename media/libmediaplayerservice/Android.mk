@@ -5,6 +5,7 @@ LOCAL_PATH:= $(call my-dir)
 #
 
 include $(CLEAR_VARS)
+include $(LOCAL_PATH)/../liballwinner/LIBRARY/config.mk
 
 LOCAL_SRC_FILES:=               \
     ActivityManager.cpp         \
@@ -16,6 +17,7 @@ LOCAL_SRC_FILES:=               \
     RemoteDisplay.cpp           \
     StagefrightRecorder.cpp     \
     TestPlayerStub.cpp          \
+    SimpleMediaFormatProbe.cpp
 
 LOCAL_SHARED_LIBRARIES :=       \
     libbinder                   \
@@ -37,6 +39,9 @@ LOCAL_SHARED_LIBRARIES :=       \
     libstagefright_wfd          \
     libutils                    \
     libvorbisidec               \
+    libawplayer             \
+    libawmetadataretriever  \
+    libthumbnailplayer
 
 LOCAL_STATIC_LIBRARIES :=       \
     libstagefright_nuplayer     \
@@ -54,8 +59,20 @@ LOCAL_C_INCLUDES :=                                                 \
     $(TOP)/frameworks/native/include/media/hardware                 \
     $(TOP)/external/tremolo/Tremolo                                 \
     libcore/include                                                 \
+    $(TOP)/frameworks/av/media/liballwinner/awplayer/                       \
+    $(TOP)/frameworks/av/media/liballwinner/awmetadataretriever/            \
+    $(TOP)/frameworks/av/media/liballwinner/LIBRARY/CODEC/VIDEO/DECODER/include    \
+    $(TOP)/frameworks/av/media/liballwinner/LIBRARY/CODEC/AUDIO/DECODER/include    \
+    $(TOP)/frameworks/av/media/liballwinner/LIBRARY/CODEC/SUBTITLE/DECODER/include \
+    $(TOP)/frameworks/av/media/liballwinner/LIBRARY/PLAYER/include                 \
+    $(TOP)/frameworks/av/media/liballwinner/LIBRARY/DEMUX/PARSER/include/   \
+    $(TOP)/frameworks/av/media/liballwinner/LIBRARY/DEMUX/STREAM/include/   \
+    $(TOP)/frameworks/av/media/liballwinner/LIBRARY/DEMUX/BASE/include/     \
+    $(TOP)/frameworks/av/media/liballwinner/LIBRARY/                        \
+    $(TOP)/frameworks/av/media/liballwinner/thumbnailplayer
 
-LOCAL_CFLAGS += -Werror -Wno-error=deprecated-declarations -Wall
+#LOCAL_CFLAGS += -Werror -Wno-error=deprecated-declarations -Wall
+LOCAL_CFLAGS += -Wall
 LOCAL_CLANG := true
 
 LOCAL_MODULE:= libmediaplayerservice

@@ -761,6 +761,9 @@ status_t convertMetaDataToMessage(
 
         parseAvcProfileLevelFromAvcc(ptr, size, msg);
 
+        uint8_t profile __unused = ptr[1];
+        uint8_t level __unused = ptr[3];
+
         // There is decodable content out there that fails the following
         // assertion, let's be lenient for now...
         // CHECK((ptr[4] >> 2) == 0x3f);  // reserved
@@ -857,6 +860,8 @@ status_t convertMetaDataToMessage(
         }
 
         const size_t dataSize = size; // save for later
+        uint8_t profile __unused = ptr[1] & 31;
+        uint8_t level __unused = ptr[12];
         ptr += 22;
         size -= 22;
 
@@ -1765,4 +1770,3 @@ AString nameForFd(int fd) {
 }
 
 }  // namespace android
-

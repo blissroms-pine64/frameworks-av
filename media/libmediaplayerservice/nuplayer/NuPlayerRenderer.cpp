@@ -1902,6 +1902,7 @@ status_t NuPlayer::Renderer::onOpenAudioSink(
         // We should always be able to set our playback settings if the sink is closed.
         LOG_ALWAYS_FATAL_IF(mAudioSink->setPlaybackRate(mPlaybackSettings) != OK,
                 "onOpenAudioSink: can't set playback rate on closed sink");
+
         status_t err = mAudioSink->open(
                     sampleRate,
                     numChannels,
@@ -1939,4 +1940,3 @@ void NuPlayer::Renderer::onCloseAudioSink() {
 }
 
 }  // namespace android
-

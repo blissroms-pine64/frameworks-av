@@ -1978,6 +1978,21 @@ status_t Camera3Device::configureStreamsLocked() {
         // TODO: Set/restore normal priority for normal use cases
     }
 
+    // Boost priority of request thread for high speed recording to SCHED_FIFO
+    if (mIsConstrainedHighSpeedConfiguration) {
+        pid_t requestThreadTid = mRequestThread->getTid();
+        res = requestPriority(getpid(), requestThreadTid,
+                kConstrainedHighSpeedThreadPriority, true);
+        if (res != OK) {
+            ALOGW("Can't set realtime priority for request processing thread: %s (%d)",
+                    strerror(-res), res);
+        } else {
+            ALOGD("Set real time priority for request queue thread (tid %d)", requestThreadTid);
+        }
+    } else {
+        // TODO: Set/restore normal priority for normal use cases
+    }
+
     // Update device state
 
     mNeedConfig = false;
@@ -2967,6 +2982,7 @@ void Camera3Device::overrideResultForPrecaptureCancel(
     }
 }
 
+<<<<<<< HEAD
 void Camera3Device::RequestThread::checkAndStopRepeatingRequest() {
     bool surfaceAbandoned = false;
     int64_t lastFrameNumber = 0;
@@ -2992,6 +3008,8 @@ void Camera3Device::RequestThread::checkAndStopRepeatingRequest() {
     }
 }
 
+=======
+>>>>>>> aosp6/develop
 bool Camera3Device::RequestThread::threadLoop() {
     ATRACE_CALL();
     status_t res;
@@ -3023,8 +3041,11 @@ bool Camera3Device::RequestThread::threadLoop() {
     if (res == TIMED_OUT) {
         // Not a fatal error if getting output buffers time out.
         cleanUpFailedRequests(/*sendRequestError*/ true);
+<<<<<<< HEAD
         // Check if any stream is abandoned.
         checkAndStopRepeatingRequest();
+=======
+>>>>>>> aosp6/develop
         return true;
     } else if (res != OK) {
         cleanUpFailedRequests(/*sendRequestError*/ false);
@@ -3198,6 +3219,7 @@ status_t Camera3Device::RequestThread::prepareHalRequests() {
                 captureRequest->mOutputStreams.size());
         halRequest->output_buffers = outputBuffers->array();
         for (size_t i = 0; i < captureRequest->mOutputStreams.size(); i++) {
+<<<<<<< HEAD
             sp<Camera3OutputStreamInterface> outputStream = captureRequest->mOutputStreams.editItemAt(i);
 
             // Prepare video buffers for high speed recording on the first video request.
@@ -3217,6 +3239,10 @@ status_t Camera3Device::RequestThread::prepareHalRequests() {
             }
 
             res = outputStream->getBuffer(&outputBuffers->editItemAt(i));
+=======
+            res = captureRequest->mOutputStreams.editItemAt(i)->
+                    getBuffer(&outputBuffers->editItemAt(i));
+>>>>>>> aosp6/develop
             if (res != OK) {
                 // Can't get output buffer from gralloc queue - this could be due to
                 // abandoned queue or other consumer misbehavior, so not a fatal
@@ -3304,6 +3330,7 @@ void Camera3Device::RequestThread::cleanUpFailedRequests(bool sendRequestError) 
         if (nextRequest.submitted) {
             continue;
         }
+<<<<<<< HEAD
 
         sp<CaptureRequest> captureRequest = nextRequest.captureRequest;
         camera3_capture_request_t* halRequest = &nextRequest.halRequest;
@@ -3313,6 +3340,17 @@ void Camera3Device::RequestThread::cleanUpFailedRequests(bool sendRequestError) 
             captureRequest->mSettings.unlock(halRequest->settings);
         }
 
+=======
+
+        sp<CaptureRequest> captureRequest = nextRequest.captureRequest;
+        camera3_capture_request_t* halRequest = &nextRequest.halRequest;
+        Vector<camera3_stream_buffer_t>* outputBuffers = &nextRequest.outputBuffers;
+
+        if (halRequest->settings != NULL) {
+            captureRequest->mSettings.unlock(halRequest->settings);
+        }
+
+>>>>>>> aosp6/develop
         if (captureRequest->mInputStream != NULL) {
             captureRequest->mInputBuffer.status = CAMERA3_BUFFER_STATUS_ERROR;
             captureRequest->mInputStream->returnInputBuffer(captureRequest->mInputBuffer);
@@ -3327,7 +3365,11 @@ void Camera3Device::RequestThread::cleanUpFailedRequests(bool sendRequestError) 
             Mutex::Autolock l(mRequestLock);
             if (mListener != NULL) {
                 mListener->notifyError(
+<<<<<<< HEAD
                         hardware::camera2::ICameraDeviceCallbacks::ERROR_CAMERA_REQUEST,
+=======
+                        ICameraDeviceCallbacks::ERROR_CAMERA_REQUEST,
+>>>>>>> aosp6/develop
                         captureRequest->mResultExtras);
             }
         }
@@ -3370,7 +3412,11 @@ void Camera3Device::RequestThread::waitForNextRequestBatch() {
     }
 
     if (mNextRequests.size() < batchSize) {
+<<<<<<< HEAD
         ALOGE("RequestThread: only get %zu out of %zu requests. Skipping requests.",
+=======
+        ALOGE("RequestThread: only get %d out of %d requests. Skipping requests.",
+>>>>>>> aosp6/develop
                 mNextRequests.size(), batchSize);
         cleanUpFailedRequests(/*sendRequestError*/true);
     }

@@ -39,6 +39,7 @@ class Camera3OutputStreamInterface : public virtual Camera3StreamInterface {
      * Return if this output stream is for video encoding.
      */
     virtual bool isVideoStream() const = 0;
+<<<<<<< HEAD
 
     /**
      * Detach an unused buffer from the stream.
@@ -50,6 +51,8 @@ class Camera3OutputStreamInterface : public virtual Camera3StreamInterface {
      */
     virtual status_t detachBuffer(sp<GraphicBuffer>* buffer, int* fenceFd) = 0;
 
+=======
+>>>>>>> aosp6/develop
 };
 
 } // namespace camera3
