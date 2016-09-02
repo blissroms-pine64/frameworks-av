@@ -444,9 +444,12 @@ void SoftHEVC::onQueueFilled(OMX_U32 portIndex) {
 
     if (NULL == mCodecCtx) {
         if (OK != initDecoder()) {
+<<<<<<< HEAD
             ALOGE("Failed to initialize decoder");
             notify(OMX_EventError, OMX_ErrorUnsupportedSetting, 0, NULL);
             mSignalledError = true;
+=======
+>>>>>>> 78b5268... Allwinner A64 changes
             return;
         }
     }
@@ -543,6 +546,7 @@ void SoftHEVC::onQueueFilled(OMX_U32 portIndex) {
             IV_API_CALL_STATUS_T status;
             status = ivdec_api_function(mCodecCtx, (void *)&s_dec_ip, (void *)&s_dec_op);
 
+<<<<<<< HEAD
             bool unsupportedResolution =
                 (IVD_STREAM_WIDTH_HEIGHT_NOT_SUPPORTED == (s_dec_op.u4_error_code & 0xFF));
 
@@ -562,6 +566,8 @@ void SoftHEVC::onQueueFilled(OMX_U32 portIndex) {
                 return;
             }
 
+=======
+>>>>>>> 78b5268... Allwinner A64 changes
             bool resChanged = (IVD_RES_CHANGED == (s_dec_op.u4_error_code & 0xFF));
 
             GETTIME(&mTimeEnd, NULL);
