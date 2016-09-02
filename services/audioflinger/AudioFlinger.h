@@ -88,6 +88,12 @@ class ServerProxy;
 
 static const nsecs_t kDefaultStandbyTimeInNsecs = seconds(3);
 
+
+// Max shared memory size for audio tracks and audio records per client process
+static const size_t kClientSharedHeapSizeBytes = 1024*1024;
+// Shared memory size multiplier for non low ram devices
+static const size_t kClientSharedHeapSizeMultiplier = 4;
+
 #define INCLUDING_FROM_AUDIOFLINGER_H
 
 class AudioFlinger :
@@ -145,6 +151,8 @@ public:
     virtual     status_t    setStreamVolume(audio_stream_type_t stream, float value,
                                             audio_io_handle_t output);
     virtual     status_t    setStreamMute(audio_stream_type_t stream, bool muted);
+
+    virtual     status_t    setStreamMuteNoPermission(audio_stream_type_t stream, bool muted);
 
     virtual     float       streamVolume(audio_stream_type_t stream,
                                          audio_io_handle_t output) const;
@@ -423,7 +431,7 @@ private:
                             Client(const Client&);
                             Client& operator = (const Client&);
         const sp<AudioFlinger> mAudioFlinger;
-        const sp<MemoryDealer> mMemoryDealer;
+              sp<MemoryDealer> mMemoryDealer;
         const pid_t         mPid;
 
         Mutex               mTimedTrackLock;

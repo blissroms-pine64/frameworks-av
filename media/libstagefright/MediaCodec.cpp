@@ -52,6 +52,12 @@
 #include <utils/Log.h>
 #include <utils/Singleton.h>
 
+#include "include/HDMIListerner.h"
+#include <media/IAudioPolicyService.h>
+#include <media/IAudioFlinger.h>
+#include <media/AudioSystem.h>
+#include <cutils/properties.h>
+
 namespace android {
 
 static int64_t getId(sp<IResourceManagerClient> client) {
@@ -63,6 +69,7 @@ static bool isResourceError(status_t err) {
 }
 
 static const int kMaxRetry = 2;
+static const int kMaxReclaimWaitTimeInUs = 500000;  // 0.5s
 
 struct ResourceManagerClient : public BnResourceManagerClient {
     ResourceManagerClient(MediaCodec* codec) : mMediaCodec(codec) {}
@@ -74,6 +81,12 @@ struct ResourceManagerClient : public BnResourceManagerClient {
             return true;
         }
         status_t err = codec->reclaim();
+        if (err == WOULD_BLOCK) {
+            ALOGD("Wait for the client to release codec.");
+            usleep(kMaxReclaimWaitTimeInUs);
+            ALOGD("Try to reclaim again.");
+            err = codec->reclaim(true /* force */);
+        }
         if (err != OK) {
             ALOGW("ResourceManagerClient failed to release codec with err %d", err);
         }
@@ -256,7 +269,18 @@ MediaCodec::MediaCodec(const sp<ALooper> &looper, pid_t pid)
       mDequeueOutputTimeoutGeneration(0),
       mDequeueOutputReplyID(0),
       mHaveInputSurface(false),
-      mHavePendingInputBuffers(false) {
+      mHavePendingInputBuffers(false),
+      mIsAudioTrack(false),
+      mIsDRMMedia(false),
+	  mHDMIPlugged(false),
+	  mHDMIListener(NULL){
+	char value[PROPERTY_VALUE_MAX];
+	if (property_get("ro.sys.mutedrm", value, NULL)
+	    && (!strncasecmp(value, "true", 4))) {
+		mMuteDRMWhenHDMI = true;
+	} else {
+		mMuteDRMWhenHDMI = false;
+	}
 }
 
 MediaCodec::~MediaCodec() {
@@ -342,6 +366,11 @@ status_t MediaCodec::init(const AString &name, bool nameIsType, bool encoder) {
         }
     }
 
+    if(nameIsType && !strncasecmp(name.c_str(), "audio/", 6)) {
+		ALOGV("mIsAudioTrack = true");
+        mIsAudioTrack = true;
+    }
+	
     if (mIsVideo) {
         // video codec needs dedicated looper
         if (mCodecLooper == NULL) {
@@ -524,6 +553,13 @@ void MediaCodec::addResource(const String8 &type, const String8 &subtype, uint64
 }
 
 status_t MediaCodec::start() {
+	if(mIsAudioTrack && mIsDRMMedia && mMuteDRMWhenHDMI) {
+		//Listen for drm protected audio track
+		mHDMIListener = new HDMIListerner;
+		mHDMIListener->setNotifyCallback(this, HDMINotify);
+		mHDMIListener->start();
+	}
+
     sp<AMessage> msg = new AMessage(kWhatStart, this);
 
     status_t err;
@@ -565,18 +601,47 @@ status_t MediaCodec::start() {
 }
 
 status_t MediaCodec::stop() {
+	if(mHDMIListener) {
+		mHDMIListener->setNotifyCallback(0, 0);
+		mHDMIListener->stop();
+		delete mHDMIListener;
+		mHDMIListener = NULL;
+	}
+
     sp<AMessage> msg = new AMessage(kWhatStop, this);
 
     sp<AMessage> response;
     return PostAndAwaitResponse(msg, &response);
 }
 
-status_t MediaCodec::reclaim() {
+bool MediaCodec::hasPendingBuffer(int portIndex) {
+    const Vector<BufferInfo> &buffers = mPortBuffers[portIndex];
+    for (size_t i = 0; i < buffers.size(); ++i) {
+        const BufferInfo &info = buffers.itemAt(i);
+        if (info.mOwnedByClient) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool MediaCodec::hasPendingBuffer() {
+    return hasPendingBuffer(kPortIndexInput) || hasPendingBuffer(kPortIndexOutput);
+}
+
+status_t MediaCodec::reclaim(bool force) {
+    ALOGD("MediaCodec::reclaim(%p) %s", this, mInitName.c_str());
     sp<AMessage> msg = new AMessage(kWhatRelease, this);
     msg->setInt32("reclaimed", 1);
+    msg->setInt32("force", force ? 1 : 0);
 
     sp<AMessage> response;
-    return PostAndAwaitResponse(msg, &response);
+    status_t ret = PostAndAwaitResponse(msg, &response);
+    if (ret == -ENOENT) {
+        ALOGD("MediaCodec looper is gone, skip reclaim");
+        ret = OK;
+    }
+    return ret;
 }
 
 status_t MediaCodec::release() {
@@ -1154,8 +1219,10 @@ void MediaCodec::onMessageReceived(const sp<AMessage> &msg) {
                         resourceType = String8(kResourceNonSecureCodec);
                     }
 
-                    const char *subtype = mIsVideo ? kResourceVideoCodec : kResourceAudioCodec;
-                    addResource(resourceType, String8(subtype), 1);
+                    if (mIsVideo) {
+                        // audio codec is currently ignored.
+                        addResource(resourceType, String8(kResourceVideoCodec), 1);
+                    }
 
                     (new AMessage)->postReply(mReplyID);
                     break;
@@ -1650,6 +1717,16 @@ void MediaCodec::onMessageReceived(const sp<AMessage> &msg) {
 
             extractCSD(format);
 
+			AString mime;
+			format->findString("mime", &mime);
+			if(mCrypto != NULL || !strncasecmp(mime.c_str(), "video/wvm", 9)) {
+				//DRM protected media.
+				mIsDRMMedia = true;
+			}
+			if(mMuteDRMWhenHDMI) {
+				format->setInt32("isdrm", mIsDRMMedia);
+			}
+
             mCodec->initiateConfigureComponent(format);
             break;
         }
@@ -1784,6 +1861,23 @@ void MediaCodec::onMessageReceived(const sp<AMessage> &msg) {
             msg->findInt32("reclaimed", &reclaimed);
             if (reclaimed) {
                 mReleasedByResourceManager = true;
+
+                int32_t force = 0;
+                msg->findInt32("force", &force);
+                if (!force && hasPendingBuffer()) {
+                    ALOGW("Can't reclaim codec right now due to pending buffers.");
+
+                    // return WOULD_BLOCK to ask resource manager to retry later.
+                    sp<AMessage> response = new AMessage;
+                    response->setInt32("err", WOULD_BLOCK);
+                    response->postReply(replyID);
+
+                    // notify the async client
+                    if (mFlags & kFlagIsAsync) {
+                        onError(DEAD_OBJECT, ACTION_CODE_FATAL);
+                    }
+                    break;
+                }
             }
 
             if (!((mFlags & kFlagIsComponentAllocated) && targetState == UNINITIALIZED) // See 1
@@ -1832,6 +1926,14 @@ void MediaCodec::onMessageReceived(const sp<AMessage> &msg) {
             if (mSoftRenderer != NULL && (mFlags & kFlagPushBlankBuffersOnShutdown)) {
                 pushBlankBuffersToNativeWindow(mSurface.get());
             }
+
+			const sp<IAudioFlinger>& af = AudioSystem::get_audio_flinger();
+            if (af == 0) {
+                ALOGE("[af] get_audio_flinger PERMISSION_DENIED");
+            } else {
+                af->setStreamMuteNoPermission(AUDIO_STREAM_MUSIC, false);
+            }
+
             break;
         }
 
@@ -2762,6 +2864,32 @@ void MediaCodec::updateBatteryStat() {
 
         mBatteryStatNotified = false;
     }
+}
+
+status_t MediaCodec::setEncoderBitrate(int32_t bitrate) {
+    if(mCodec == NULL) return NO_INIT;
+    return mCodec->setEncoderBitrate(bitrate);
+}
+
+void MediaCodec::setHDMIState(bool state) {
+		ALOGV("setHDMIState, state=%d", state);
+		mHDMIPlugged = state;
+
+		const sp<IAudioFlinger>& af = AudioSystem::get_audio_flinger();
+		if (af == 0) {
+			ALOGE("[af] get_audio_flinger PERMISSION_DENIED");
+		} else {
+			af->setStreamMuteNoPermission(AUDIO_STREAM_MUSIC, mHDMIPlugged);
+		}
+}
+
+	//static
+void MediaCodec::HDMINotify(void* cookie, bool state){
+		ALOGV("HDMINotify");
+		MediaCodec * codec = static_cast<MediaCodec *>(cookie);
+		if(codec) {
+			codec->setHDMIState(state);
+		}
 }
 
 }  // namespace android

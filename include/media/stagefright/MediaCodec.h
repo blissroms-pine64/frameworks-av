@@ -41,6 +41,7 @@ class IResourceManagerService;
 struct PersistentSurface;
 struct SoftwareRenderer;
 struct Surface;
+class HDMIListerner;
 
 struct MediaCodec : public AHandler {
     enum ConfigureFlags {
@@ -155,6 +156,8 @@ struct MediaCodec : public AHandler {
 
     status_t requestIDRFrame();
 
+    status_t setEncoderBitrate(int32_t bitrate);
+
     // Notification will be posted once there "is something to do", i.e.
     // an input/output buffer has become available, a format change is
     // pending, an error is pending.
@@ -176,7 +179,7 @@ protected:
 
 private:
     // used by ResourceManagerClient
-    status_t reclaim();
+    status_t reclaim(bool force = false);
     friend struct ResourceManagerClient;
 
 private:
@@ -337,6 +340,14 @@ private:
     bool mHaveInputSurface;
     bool mHavePendingInputBuffers;
 
+    //add by aw. start
+    bool mIsAudioTrack;
+    bool mIsDRMMedia;
+    bool mHDMIPlugged;
+	bool mMuteDRMWhenHDMI;
+    HDMIListerner * mHDMIListener;
+    //add by aw. end
+
     MediaCodec(const sp<ALooper> &looper, pid_t pid);
 
     static status_t PostAndAwaitResponse(
@@ -384,6 +395,14 @@ private:
 
     uint64_t getGraphicBufferSize();
     void addResource(const String8 &type, const String8 &subtype, uint64_t value);
+
+    bool hasPendingBuffer(int portIndex);
+    bool hasPendingBuffer();
+
+	//add by aw. start
+    void 	 setHDMIState(bool state);
+    static void HDMINotify(void* cookie, bool state);
+    //add by aw. end
 
     /* called to get the last codec error when the sticky flag is set.
      * if no such codec error is found, returns UNKNOWN_ERROR.
