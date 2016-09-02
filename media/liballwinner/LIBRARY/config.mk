@@ -126,7 +126,7 @@ OPTION_FPGA_BOARD_ENABLE = 2
 LOCAL_CFLAGS += -DOPTION_FPGA_BOARD_ENABLE=$(OPTION_FPGA_BOARD_ENABLE)
 
 #############################################################################
-############################## configuration. ############################### 
+############################## configuration. ###############################
 #############################################################################
 CONFIG_CC = $(OPTION_CC_GNUEABI)
 CONFIG_OS = $(OPTION_OS_ANDROID)
@@ -140,7 +140,7 @@ CONFIG_CMCC = $(OPTION_CMCC_NO)
 CONFIG_DTV = $(OPTION_DTV_NO)
 CONFIG_FPGA_BOARD = $(OPTION_FPGA_BOARD_ENABLE)
 CONFIG_IS_CAMERA_DECODER = $(OPTION_IS_CAMERA_DECODER_NO)
-ifdef TARGET_BUSINESS_PLATFORM  
+ifdef TARGET_BUSINESS_PLATFORM
     ifeq (cmccwasu , $(TARGET_BUSINESS_PLATFORM))
         CONFIG_CMCC = $(OPTION_CMCC_YES)
     endif
@@ -180,7 +180,7 @@ LOCAL_CFLAGS += -DCONFIG_CMCC=$(CONFIG_CMCC)
 LOCAL_CFLAGS += -DCONFIG_DTV=$(CONFIG_DTV)
 
 #$(warning "SW_CHIP_PLATFORM:"$(SW_CHIP_PLATFORM))
-#$(warning "PLATFORM_VERSION:"$(PLATFORM_VERSION)) 
+#$(warning "PLATFORM_VERSION:"$(PLATFORM_VERSION))
 #$(warning "TARGET_PRODUCT:"$(TARGET_PRODUCT))
 
 ########## configure CONFIG_CHIP ##########
@@ -237,7 +237,7 @@ endif
 
 LOCAL_CFLAGS += -DCONFIG_CHIP=$(CONFIG_CHIP)
 
-########## configure CONFIG_OS_VERSION ########## 
+########## configure CONFIG_OS_VERSION ##########
 ifeq ($(CONFIG_OS), $(OPTION_OS_ANDROID))
     os_version = $(shell echo $(PLATFORM_VERSION) | cut -c 1-3)
     ifeq ($(os_version), 4.2)
@@ -250,15 +250,17 @@ ifeq ($(CONFIG_OS), $(OPTION_OS_ANDROID))
         CONFIG_OS_VERSION = $(OPTION_OS_VERSION_ANDROID_5_0)
     else ifeq ($(os_version), 6.0)
         CONFIG_OS_VERSION = $(OPTION_OS_VERSION_ANDROID_6_0)
+    else ifeq ($(os_version), 7.0)
+        CONFIG_OS_VERSION = $(OPTION_OS_VERSION_ANDROID_6_0)
     else
         $(warning $(os_version))
-        CONFIG_OS_VERSION = -1	
+        CONFIG_OS_VERSION = -1
     endif
 endif
 
-LOCAL_CFLAGS += -DCONFIG_OS_VERSION=$(CONFIG_OS_VERSION) 
+LOCAL_CFLAGS += -DCONFIG_OS_VERSION=$(CONFIG_OS_VERSION)
 
-########## configure USE_SW_DEINTERLACE ########## 
+########## configure USE_SW_DEINTERLACE ##########
 LIB_AW_PATH := $(TOP)/frameworks/av/media/liballwinner
 LAW_CFLAGS :=
 
@@ -387,7 +389,7 @@ ENABLE_SUBTITLE_DISPLAY_IN_CEDARX := 0
 ifeq ($(CONFIG_OS_VERSION),$(OPTION_OS_VERSION_ANDROID_5_0))
     ENABLE_SUBTITLE_DISPLAY_IN_CEDARX := 0
 else ifeq ($(CONFIG_OS_VERSION),$(OPTION_OS_VERSION_ANDROID_6_0))
-    ENABLE_SUBTITLE_DISPLAY_IN_CEDARX := 0    
+    ENABLE_SUBTITLE_DISPLAY_IN_CEDARX := 0
 endif
 LOCAL_CFLAGS += -DENABLE_SUBTITLE_DISPLAY_IN_CEDARX=$(ENABLE_SUBTITLE_DISPLAY_IN_CEDARX)
 
@@ -452,4 +454,3 @@ else
 endif
 
 ###################################end define####################################
-

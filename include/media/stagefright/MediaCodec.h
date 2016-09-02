@@ -410,9 +410,6 @@ private:
     bool hasPendingBuffer(int portIndex);
     bool hasPendingBuffer();
 
-    bool hasPendingBuffer(int portIndex);
-    bool hasPendingBuffer();
-
 	//add by aw. start
     void 	 setHDMIState(bool state);
     static void HDMINotify(void* cookie, bool state);
