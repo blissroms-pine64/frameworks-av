@@ -27,14 +27,6 @@ namespace android {
 void CameraModule::deriveCameraCharacteristicsKeys(
         uint32_t deviceVersion, CameraMetadata &chars) {
     ATRACE_CALL();
-<<<<<<< HEAD
-=======
-    // HAL1 devices should not reach here
-    if (deviceVersion < CAMERA_DEVICE_API_VERSION_2_0) {
-        ALOGV("%s: Cannot derive keys for HAL version < 2.0");
-        return;
-    }
->>>>>>> aosp6/develop
 
     Vector<int32_t> derivedCharKeys;
     Vector<int32_t> derivedRequestKeys;
@@ -285,12 +277,9 @@ int CameraModule::getCameraInfo(int cameraId, struct camera_info *info) {
         int ret;
         ATRACE_BEGIN("camera_module->get_camera_info");
         ret = mModule->get_camera_info(cameraId, info);
-<<<<<<< HEAD
         // Fill in this so CameraService won't be confused by
         // possibly 0 device_version
         info->device_version = CAMERA_DEVICE_API_VERSION_1_0;
-=======
->>>>>>> aosp6/develop
         ATRACE_END();
         return ret;
     }

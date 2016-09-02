@@ -268,11 +268,6 @@ void CameraService::onFirstRef()
         mModule->setCallbacks(this);
     }
 
-<<<<<<< HEAD
-=======
-    CameraDeviceFactory::registerService(this);
-
->>>>>>> aosp6/develop
     CameraService::pingCameraServiceProxy();
 }
 
@@ -340,16 +335,9 @@ void CameraService::onDeviceStatusChanged(camera_device_status_t  cameraId,
             clientToDisconnect = removeClientLocked(id);
 
             // Notify the client of disconnection
-<<<<<<< HEAD
             clientToDisconnect->notifyError(
                     hardware::camera2::ICameraDeviceCallbacks::ERROR_CAMERA_DISCONNECTED,
                     CaptureResultExtras{});
-=======
-            if (clientToDisconnect != nullptr) {
-                clientToDisconnect->notifyError(ICameraDeviceCallbacks::ERROR_CAMERA_DISCONNECTED,
-                        CaptureResultExtras{});
-            }
->>>>>>> aosp6/develop
         }
 
         ALOGI("%s: Client for camera ID %s evicted due to device status change from HAL",
@@ -438,16 +426,7 @@ void CameraService::onTorchStatusChangedLocked(const String8& cameraId,
     }
 }
 
-<<<<<<< HEAD
 Status CameraService::getNumberOfCameras(int32_t type, int32_t* numCameras) {
-=======
-int32_t CameraService::getNumberOfCameras() {
-    ATRACE_CALL();
-    return getNumberOfCameras(CAMERA_TYPE_BACKWARD_COMPATIBLE);
-}
-
-int32_t CameraService::getNumberOfCameras(int type) {
->>>>>>> aosp6/develop
     ATRACE_CALL();
     switch (type) {
         case CAMERA_TYPE_BACKWARD_COMPATIBLE:
@@ -465,13 +444,8 @@ int32_t CameraService::getNumberOfCameras(int type) {
     return Status::ok();
 }
 
-<<<<<<< HEAD
 Status CameraService::getCameraInfo(int cameraId,
         CameraInfo* cameraInfo) {
-=======
-status_t CameraService::getCameraInfo(int cameraId,
-                                      struct CameraInfo* cameraInfo) {
->>>>>>> aosp6/develop
     ATRACE_CALL();
     if (!mModule) {
         return STATUS_ERROR(ERROR_DISCONNECTED,
@@ -510,17 +484,11 @@ int CameraService::cameraIdToInt(const String8& cameraId) {
     return ret;
 }
 
-<<<<<<< HEAD
 Status CameraService::generateShimMetadata(int cameraId, /*out*/CameraMetadata* cameraInfo) {
     ATRACE_CALL();
 
     Status ret = Status::ok();
 
-=======
-status_t CameraService::generateShimMetadata(int cameraId, /*out*/CameraMetadata* cameraInfo) {
-    ATRACE_CALL();
-    status_t ret = OK;
->>>>>>> aosp6/develop
     struct CameraInfo info;
     if (!(ret = getCameraInfo(cameraId, &info)).isOk()) {
         return ret;
@@ -689,13 +657,9 @@ int CameraService::getCameraPriorityFromProcState(int procState) {
     return INT_MAX - procState;
 }
 
-<<<<<<< HEAD
 Status CameraService::getCameraVendorTagDescriptor(
         /*out*/
         hardware::camera2::params::VendorTagDescriptor* desc) {
-=======
-status_t CameraService::getCameraVendorTagDescriptor(/*out*/sp<VendorTagDescriptor>& desc) {
->>>>>>> aosp6/develop
     ATRACE_CALL();
     if (!mModule) {
         ALOGE("%s: camera hardware module doesn't exist", __FUNCTION__);
@@ -1291,11 +1255,7 @@ Status CameraService::connect(
         sp<ICamera>* device) {
 
     ATRACE_CALL();
-<<<<<<< HEAD
     Status ret = Status::ok();
-=======
-    status_t ret = NO_ERROR;
->>>>>>> aosp6/develop
     String8 id = String8::format("%d", cameraId);
     sp<Client> client = nullptr;
     ret = connectHelper<ICameraClient,Client>(cameraClient, id,
@@ -1367,11 +1327,7 @@ Status CameraService::connectDevice(
         sp<hardware::camera2::ICameraDeviceUser>* device) {
 
     ATRACE_CALL();
-<<<<<<< HEAD
     Status ret = Status::ok();
-=======
-    status_t ret = NO_ERROR;
->>>>>>> aosp6/develop
     String8 id = String8::format("%d", cameraId);
     sp<CameraDeviceClient> client = nullptr;
     ret = connectHelper<hardware::camera2::ICameraDeviceCallbacks,CameraDeviceClient>(cameraCb, id,
@@ -1506,12 +1462,8 @@ Status CameraService::setTorchMode(const String16& cameraId, bool enabled,
     return Status::ok();
 }
 
-<<<<<<< HEAD
 Status CameraService::notifySystemEvent(int32_t eventId,
         const std::vector<int32_t>& args) {
-=======
-void CameraService::notifySystemEvent(int32_t eventId, const int32_t* args, size_t length) {
->>>>>>> aosp6/develop
     ATRACE_CALL();
 
     switch(eventId) {
@@ -1529,11 +1481,7 @@ void CameraService::notifySystemEvent(int32_t eventId, const int32_t* args, size
     return Status::ok();
 }
 
-<<<<<<< HEAD
 Status CameraService::addListener(const sp<ICameraServiceListener>& listener) {
-=======
-status_t CameraService::addListener(const sp<ICameraServiceListener>& listener) {
->>>>>>> aosp6/develop
     ATRACE_CALL();
 
     ALOGV("%s: Add listener %p", __FUNCTION__, listener.get());
@@ -1583,11 +1531,7 @@ status_t CameraService::addListener(const sp<ICameraServiceListener>& listener) 
     return Status::ok();
 }
 
-<<<<<<< HEAD
 Status CameraService::removeListener(const sp<ICameraServiceListener>& listener) {
-=======
-status_t CameraService::removeListener(const sp<ICameraServiceListener>& listener) {
->>>>>>> aosp6/develop
     ATRACE_CALL();
 
     ALOGV("%s: Remove listener %p", __FUNCTION__, listener.get());
@@ -1615,11 +1559,7 @@ status_t CameraService::removeListener(const sp<ICameraServiceListener>& listene
     return STATUS_ERROR(ERROR_ILLEGAL_ARGUMENT, "Unregistered listener given to removeListener");
 }
 
-<<<<<<< HEAD
 Status CameraService::getLegacyParameters(int cameraId, /*out*/String16* parameters) {
-=======
-status_t CameraService::getLegacyParameters(int cameraId, /*out*/String16* parameters) {
->>>>>>> aosp6/develop
 
     ATRACE_CALL();
     ALOGV("%s: for camera ID = %d", __FUNCTION__, cameraId);
@@ -1645,11 +1585,7 @@ status_t CameraService::getLegacyParameters(int cameraId, /*out*/String16* param
     return ret;
 }
 
-<<<<<<< HEAD
 Status CameraService::supportsCameraApi(int cameraId, int apiVersion, bool *isSupported) {
-=======
-status_t CameraService::supportsCameraApi(int cameraId, int apiVersion) {
->>>>>>> aosp6/develop
     ATRACE_CALL();
 
     ALOGV("%s: for camera ID = %d", __FUNCTION__, cameraId);
@@ -2168,11 +2104,7 @@ CameraService::BasicClient::~BasicClient() {
 binder::Status CameraService::BasicClient::disconnect() {
     binder::Status res = Status::ok();
     if (mDisconnected) {
-<<<<<<< HEAD
         return res;
-=======
-        return;
->>>>>>> aosp6/develop
     }
     mDisconnected = true;
 
@@ -2344,11 +2276,8 @@ sp<CameraService::Client> CameraService::Client::getClientFromCookie(void* user)
 
 void CameraService::Client::notifyError(int32_t errorCode,
         const CaptureResultExtras& resultExtras) {
-<<<<<<< HEAD
     (void) errorCode;
     (void) resultExtras;
-=======
->>>>>>> aosp6/develop
     if (mRemoteCallback != NULL) {
         mRemoteCallback->notifyCallback(CAMERA_MSG_ERROR, CAMERA_ERROR_RELEASED, 0);
     } else {

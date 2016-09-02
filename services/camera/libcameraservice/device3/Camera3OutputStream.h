@@ -112,7 +112,6 @@ class Camera3OutputStream :
      * Return if this output stream is for video encoding.
      */
     bool isVideoStream() const;
-<<<<<<< HEAD
     /**
      * Return if this output stream is consumed by hardware composer.
      */
@@ -140,8 +139,6 @@ class Camera3OutputStream :
      * It is only legal to call this method when stream is in STATE_CONSTRUCTED state.
      */
     status_t setBufferManager(sp<Camera3BufferManager> bufferManager);
-=======
->>>>>>> aosp6/develop
 
   protected:
     Camera3OutputStream(int id, camera3_stream_type_t type,

@@ -55,14 +55,11 @@ Camera3Stream::Camera3Stream(int id,
     mMaxSize(maxSize),
     mState(STATE_CONSTRUCTED),
     mStatusId(StatusTracker::NO_STATUS_ID),
-<<<<<<< HEAD
     mStreamUnpreparable(false),
     mOldUsage(0),
     mOldMaxBuffers(0),
     mPrepared(false),
     mPreparedBufferIdx(0),
-=======
->>>>>>> aosp6/develop
     mLastMaxCount(Camera3StreamInterface::ALLOCATE_PIPELINE_MAX) {
 
     camera3_stream::stream_type = type;
@@ -271,12 +268,6 @@ status_t Camera3Stream::startPrepare(int maxCount) {
     ATRACE_CALL();
 
     Mutex::Autolock l(mLock);
-
-    if (maxCount < 0) {
-        ALOGE("%s: Stream %d: Can't prepare stream if max buffer count (%d) is < 0",
-                __FUNCTION__, mId, maxCount);
-        return BAD_VALUE;
-    }
 
     if (maxCount < 0) {
         ALOGE("%s: Stream %d: Can't prepare stream if max buffer count (%d) is < 0",
@@ -552,10 +543,7 @@ status_t Camera3Stream::returnBuffer(const camera3_stream_buffer &buffer,
     // buffer to be returned.
     mOutputBufferReturnedSignal.signal();
 
-<<<<<<< HEAD
     removeOutstandingBuffer(buffer);
-=======
->>>>>>> aosp6/develop
     return res;
 }
 
