@@ -245,7 +245,7 @@ VideoEngine* VideoEngineCreate(VConfig* pVConfig, VideoStreamInfo* pVideoInfo)
 {
     int          ret;
     VideoEngine* pEngine;
-    
+
     pEngine = (VideoEngine*)malloc(sizeof(VideoEngine));
     if(pEngine == NULL)
     {
@@ -255,7 +255,7 @@ VideoEngine* VideoEngineCreate(VConfig* pVConfig, VideoStreamInfo* pVideoInfo)
     memset(pEngine, 0, sizeof(VideoEngine));
     memcpy(&pEngine->vconfig, pVConfig, sizeof(VConfig));
     memcpy(&pEngine->videoStreamInfo, pVideoInfo, sizeof(VideoStreamInfo));
-    
+
     if(pVideoInfo->nCodecSpecificDataLen > 0 && pVideoInfo->pCodecSpecificData != NULL)
     {
         pEngine->videoStreamInfo.pCodecSpecificData = (char*)malloc(pVideoInfo->nCodecSpecificDataLen);
@@ -266,11 +266,11 @@ VideoEngine* VideoEngineCreate(VConfig* pVConfig, VideoStreamInfo* pVideoInfo)
             free(pEngine);
             return NULL;
         }
-        memcpy(pEngine->videoStreamInfo.pCodecSpecificData, 
+        memcpy(pEngine->videoStreamInfo.pCodecSpecificData,
                pVideoInfo->pCodecSpecificData,
                pVideoInfo->nCodecSpecificDataLen);
     }
-    
+
 
     //* save the ve version.
     {
@@ -292,7 +292,7 @@ VideoEngine* VideoEngineCreate(VConfig* pVConfig, VideoStreamInfo* pVideoInfo)
         free(pEngine);
         return NULL;
     }
-    
+
     if(pEngine->bIsSoftwareDecoder == 0)
     {
         //* reset ve hardware and set up top level registers.
@@ -309,7 +309,7 @@ VideoEngine* VideoEngineCreate(VConfig* pVConfig, VideoStreamInfo* pVideoInfo)
         {
         	pEngine->vconfig.eOutputPixelFormat = PIXEL_FORMAT_YUV_MB32_420;
         	if(gVeVersion >= 0x1667)
-        	{   
+        	{
                 //* on chip-1673-pad, we should set to NV21 to fix the rotateion-device
 #if (CONFIG_PRODUCT == OPTION_PRODUCT_PAD)
 				if (gVeVersion == 0x1673)
@@ -334,7 +334,7 @@ VideoEngine* VideoEngineCreate(VConfig* pVConfig, VideoStreamInfo* pVideoInfo)
     else
     	EnableVeSpecificDecoder(pEngine);
     pEngine->fbmInfo.bIs3DStream = pEngine->videoStreamInfo.bIs3DStream;   // added by xyliu
-    pEngine->fbmInfo.bIsFrameCtsTestFlag = pEngine->videoStreamInfo.bIsFrameCtsTestFlag;//cts 
+    pEngine->fbmInfo.bIsFrameCtsTestFlag = pEngine->videoStreamInfo.bIsFrameCtsTestFlag;//cts
     pEngine->fbmInfo.nExtraFbmBufferNum = pEngine->vconfig.nDeInterlaceHoldingFrameBufferNum +
                                           pEngine->vconfig.nDisplayHoldingFrameBufferNum +
                                           pEngine->vconfig.nRotateHoldingFrameBufferNum +
@@ -361,19 +361,19 @@ VideoEngine* VideoEngineCreate(VConfig* pVConfig, VideoStreamInfo* pVideoInfo)
     	DisableJpegVeSpecificDecoder(pEngine);
     else
     	DisableVeSpecificDecoder(pEngine);
-    
+
     if(ret != VDECODE_RESULT_OK)
     {
         loge("initial specific decoder fail.");
-        
+
         if(pEngine->videoStreamInfo.pCodecSpecificData != NULL &&
             pEngine->videoStreamInfo.nCodecSpecificDataLen > 0)
             free(pEngine->videoStreamInfo.pCodecSpecificData);
-        
+
         free(pEngine);
         return NULL;
     }
-    
+
     return pEngine;
 }
 
@@ -390,18 +390,18 @@ void VideoEngineDestroy(VideoEngine* pVideoEngine)
     	DisableJpegVeSpecificDecoder(pVideoEngine);
     else
     	DisableVeSpecificDecoder(pVideoEngine);
-    
+
     //* free codec specific data.
     if(pVideoEngine->videoStreamInfo.pCodecSpecificData != NULL &&
         pVideoEngine->videoStreamInfo.nCodecSpecificDataLen > 0)
         free(pVideoEngine->videoStreamInfo.pCodecSpecificData);
-    
+
     //* if use other decoder library, close the library.
     if(pVideoEngine->pLibHandle != NULL)
         dlclose(pVideoEngine->pLibHandle);
-    
+
     free(pVideoEngine);
-    
+
     return;
 }
 
@@ -1156,7 +1156,7 @@ void AddVDPluginSingle(char *lib)
     PluginInit = dlsym(libFd, "CedarPluginVDInit");
     if (PluginInit == NULL)
     {
-        logw("Invalid plugin, CedarPluginVDInit not found.");
+        logw("Invalid plugin, CedarPluginVDInit not found: %s", lib);
         return;
     }
     logd("vdecoder open lib: %s", lib);
@@ -1216,4 +1216,3 @@ scan_system_lib:
 
     return;
 }
-
