@@ -253,7 +253,6 @@ void Drm::findFactoryForScheme(const uint8_t uuid[16]) {
 }
 
 bool Drm::loadLibraryForScheme(const String8 &path, const uint8_t uuid[16]) {
-
     // get strong pointer to open shared library
     ssize_t index = mLibraryPathToOpenLibraryMap.indexOfKey(path);
     if (index >= 0) {
@@ -279,9 +278,16 @@ bool Drm::loadLibraryForScheme(const String8 &path, const uint8_t uuid[16]) {
     if (createDrmFactory == NULL ||
         (mFactory = createDrmFactory()) == NULL ||
         !mFactory->isCryptoSchemeSupported(uuid)) {
+                ALOGI("loadLibraryForScheme: %s: createDrmFactory: %p: failed", path.string(), createDrmFactory);
         closeFactory();
         return false;
     }
+
+    ALOGI("loadLibraryForScheme: %s: OK: %08x, %08x, %08x, %08x", path.string(),
+      *(unsigned*)&uuid[0],
+      *(unsigned*)&uuid[1],
+      *(unsigned*)&uuid[2],
+      *(unsigned*)&uuid[3]);
     return true;
 }
 
@@ -582,7 +588,10 @@ status_t Drm::getPropertyString(String8 const &name, String8 &value ) const {
         return -EINVAL;
     }
 
-    return mPlugin->getPropertyString(name, value);
+    status_t status =  mPlugin->getPropertyString(name, value);
+        ALOGI("getPropertyString: %s: %d: %s", name.string(), status, value.string());
+
+return status;
 }
 
 status_t Drm::getPropertyByteArray(String8 const &name, Vector<uint8_t> &value ) const {

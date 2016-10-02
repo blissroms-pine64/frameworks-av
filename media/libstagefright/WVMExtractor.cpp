@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "WVMExtractor"
+#define LOG_TAG "WVMExtractor|libwvm.so"
 #include <utils/Log.h>
 
 #include "include/WVMExtractor.h"
@@ -53,6 +53,8 @@ WVMExtractor::WVMExtractor(const sp<DataSource> &source)
         return;
     }
 
+    ALOGI("WVMExtractor");
+
     typedef WVMLoadableExtractor *(*GetInstanceFunc)(sp<DataSource>);
     GetInstanceFunc getInstanceFunc =
         (GetInstanceFunc) dlsym(gVendorLibHandle,
@@ -64,6 +66,7 @@ WVMExtractor::WVMExtractor(const sp<DataSource> &source)
             mImpl = (*getInstanceFunc)(source);
             CHECK(mImpl != NULL);
             setDrmFlag(true);
+            ALOGI("Drm manager initialized.");
         } else {
             ALOGE("Drm manager failed to initialize.");
         }
@@ -77,6 +80,8 @@ static void init_routine()
     gVendorLibHandle = dlopen("libwvm.so", RTLD_NOW);
     if (gVendorLibHandle == NULL) {
         ALOGE("Failed to open libwvm.so: %s", dlerror());
+    } else {
+        ALOGE("Loaded libwvm.so.");
     }
 }
 
@@ -175,6 +180,8 @@ bool SniffWVM(
         return false;
     }
 
+    ALOGI("SniffWVM run");
+
     typedef WVMLoadableExtractor *(*SnifferFunc)(const sp<DataSource>&);
     SnifferFunc snifferFunc =
         (SnifferFunc) dlsym(gVendorLibHandle,
@@ -184,8 +191,10 @@ bool SniffWVM(
         if ((*snifferFunc)(source)) {
             *mimeType = MEDIA_MIMETYPE_CONTAINER_WVM;
             *confidence = 10.0f;
+            ALOGW("SniffWVM is Widevine media");
             return true;
         }
+        ALOGW("SniffWVM is not Widevine media");
     } else {
         ALOGE("IsWidevineMedia not found in libwvm.so");
     }
@@ -194,4 +203,3 @@ bool SniffWVM(
 }
 
 } //namespace android
-

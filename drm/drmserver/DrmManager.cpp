@@ -224,7 +224,34 @@ DrmInfo* DrmManager::acquireDrmInfo(int uniqueId, const DrmInfoRequest* drmInfoR
     const String8 plugInId = getSupportedPlugInId(drmInfoRequest->getMimeType());
     if (EMPTY_STRING != plugInId) {
         IDrmEngine& rDrmEngine = mPlugInManager.getPlugIn(plugInId);
-        return rDrmEngine.acquireDrmInfo(uniqueId, drmInfoRequest);
+
+        ALOGI("acquireDrmInfo: request: infoType=%d, mimeType=%s, count=%d",
+          drmInfoRequest->getInfoType(), drmInfoRequest->getMimeType().string(), drmInfoRequest->getCount());
+
+        DrmInfoRequest::KeyIterator i = drmInfoRequest->keyIterator();
+        while (i.hasNext()) {
+          const String8 key = i.next();
+          const String8 value = drmInfoRequest->get(key);
+          ALOGI("acquireDrmInfo: request: %s => %s", key.string(), value.string());
+        }
+        ALOGI("acquireDrmInfo: request: done");
+
+        DrmInfo *drmInfo = rDrmEngine.acquireDrmInfo(uniqueId, drmInfoRequest);
+
+        if(drmInfo != NULL) {
+          ALOGI("acquireDrmInfo: response: infoType=%d, mimeType=%s, count=%d",
+            drmInfo->getInfoType(), drmInfo->getMimeType().string(), drmInfo->getCount());
+
+          DrmInfo::KeyIterator i = drmInfo->keyIterator();
+          while (i.hasNext()) {
+            const String8 key = i.next();
+            const String8 value = drmInfo->get(key);
+            ALOGI("acquireDrmInfo: response: %s => %s", key.string(), value.string());
+          }
+          ALOGI("acquireDrmInfo: response: done");
+        } else {
+          ALOGI("acquireDrmInfo: response NULL");
+        }
     }
     return NULL;
 }
@@ -608,4 +635,3 @@ void DrmManager::onInfo(const DrmInfoEvent& event) {
         }
     }
 }
-

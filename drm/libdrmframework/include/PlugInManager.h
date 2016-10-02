@@ -137,9 +137,11 @@ public:
 
         PlugInContainer* pPlugInContainer = new PlugInContainer();
 
+dlerror();
         pPlugInContainer->hHandle = dlopen(rsPlugInPath.string(), RTLD_LAZY);
 
         if (NULL == pPlugInContainer->hHandle) {
+          ALOGI("Loading plugin failed: %s: %s\n", rsPlugInPath.string(), dlerror());
             delete pPlugInContainer;
             pPlugInContainer = NULL;
             return;
@@ -258,4 +260,3 @@ private:
 };
 
 #endif /* __PLUGIN_MANAGER_H__ */
-

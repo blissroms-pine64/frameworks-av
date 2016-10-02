@@ -1150,6 +1150,9 @@ void MediaCodecList::findMatchingCodecs(
         return;
     }
 
+    ALOGI("MediaCodecList::findMatchingCodecs(%s, %d, %d)",
+      mime, encoder, flags);
+
     size_t index = 0;
     for (;;) {
         ssize_t matchIndex =

@@ -45,6 +45,9 @@ public:
     status_t acquire_buffer(
             MediaBuffer **buffer, bool nonBlocking = false, size_t requestedSize = 0);
 
+    status_t acquire_buffer(
+            MediaBuffer **buffer, bool nonBlocking);
+
 protected:
     virtual void signalBufferReturned(MediaBuffer *buffer);
 

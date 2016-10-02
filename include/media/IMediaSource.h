@@ -28,28 +28,9 @@ class MetaData;
 class MediaBuffer;
 class MediaBufferGroup;
 
-class IMediaSource : public IInterface {
-public:
-    DECLARE_META_INTERFACE(MediaSource);
-
-    enum {
-        // Maximum number of buffers would be read in readMultiple.
-        kMaxNumReadMultiple = 128,
-    };
-
-    // To be called before any other methods on this object, except
-    // getFormat().
+struct IIMediaSource : public virtual RefBase {
     virtual status_t start(MetaData *params = NULL) = 0;
-
-    // Any blocking read call returns immediately with a result of NO_INIT.
-    // It is an error to call any methods other than start after this call
-    // returns. Any buffers the object may be holding onto at the time of
-    // the stop() call are released.
-    // Also, it is imperative that any buffers output by this object and
-    // held onto by callers be released before a call to stop() !!!
     virtual status_t stop() = 0;
-
-    // Returns the format of the data output by this media source.
     virtual sp<MetaData> getFormat() = 0;
 
     // Options that modify read() behaviour. The default is to
@@ -90,6 +71,42 @@ public:
         int64_t mLatenessUs;
         bool mNonBlocking;
     };
+
+    virtual status_t read(
+            MediaBuffer **buffer, const ReadOptions *options = NULL) = 0;
+
+    virtual status_t pause() = 0;
+
+    virtual status_t setBuffers(const Vector<MediaBuffer *> & /* buffers */) = 0;
+
+protected:
+    virtual ~IIMediaSource() {}
+};
+
+class IMediaSource : public IIMediaSource, public IInterface {
+public:
+    DECLARE_META_INTERFACE(MediaSource);
+
+    enum {
+        // Maximum number of buffers would be read in readMultiple.
+        kMaxNumReadMultiple = 128,
+    };
+
+    // To be called before any other methods on this object, except
+    // getFormat().
+    virtual status_t start(MetaData *params = NULL) = 0;
+
+    // Any blocking read call returns immediately with a result of NO_INIT.
+    // It is an error to call any methods other than start after this call
+    // returns. Any buffers the object may be holding onto at the time of
+    // the stop() call are released.
+    // Also, it is imperative that any buffers output by this object and
+    // held onto by callers be released before a call to stop() !!!
+    virtual status_t stop() = 0;
+
+    // Returns the format of the data output by this media source.
+    virtual sp<MetaData> getFormat() = 0;
+
 
     // Returns a new buffer of data. Call blocks until a
     // buffer is available, an error is encountered or the end of the stream

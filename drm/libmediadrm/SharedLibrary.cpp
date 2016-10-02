@@ -25,7 +25,11 @@
 namespace android {
 
     SharedLibrary::SharedLibrary(const String8 &path) {
+      dlerror();
         mLibHandle = dlopen(path.string(), RTLD_NOW);
+        if (!mLibHandle) {
+          ALOGI("Failed to load SharedLibrary: %s: %s", path.string(), dlerror());
+        }
     }
 
     SharedLibrary::~SharedLibrary() {

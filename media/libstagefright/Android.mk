@@ -63,7 +63,8 @@ LOCAL_SRC_FILES:=                         \
         WVMExtractor.cpp                  \
         XINGSeeker.cpp                    \
         avc_utils.cpp                     \
-        HDMIListerner.cpp
+        HDMIListerner.cpp                 \
+				Android6_CL.cpp
 
 LOCAL_C_INCLUDES:= \
         $(TOP)/frameworks/av/include/media/ \
@@ -126,6 +127,8 @@ LOCAL_SHARED_LIBRARIES += \
         libRScpp \
 
 LOCAL_CFLAGS += -Wno-multichar -Werror -Wno-error=deprecated-declarations -Wall
+
+#LOCAL_CFLAGS += -DLOG_NDEBUG=0
 
 # enable experiments only in userdebug and eng builds
 ifneq (,$(filter userdebug eng,$(TARGET_BUILD_VARIANT)))

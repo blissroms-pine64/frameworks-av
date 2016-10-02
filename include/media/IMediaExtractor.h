@@ -25,6 +25,28 @@ namespace android {
 
 class MetaData;
 
+// class IIMediaExtractor : public RefBase {
+// public:
+//     virtual size_t countTracks() = 0;
+//     virtual sp<IMediaSource> getTrack(size_t index) = 0;
+//
+//     virtual sp<MetaData> getTrackMetaData(
+//             size_t index, uint32_t flags = 0) = 0;
+//
+//     // Return container specific meta-data. The default implementation
+//     // returns an empty metadata object.
+//     virtual sp<MetaData> getMetaData() = 0;
+//
+//     // If subclasses do _not_ override this, the default is
+//     // CAN_SEEK_BACKWARD | CAN_SEEK_FORWARD | CAN_SEEK | CAN_PAUSE
+//     virtual uint32_t flags() const = 0;
+//     virtual char* getDrmTrackInfo(size_t trackID, int *len) = 0;
+//     virtual void setUID(uid_t uid) = 0;
+//
+// protected:
+//     virtual ~IIMediaExtractor() {}
+// };
+
 class IMediaExtractor : public IInterface {
 public:
     DECLARE_META_INTERFACE(MediaExtractor);
