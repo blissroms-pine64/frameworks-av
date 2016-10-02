@@ -58,7 +58,7 @@
 namespace android {
 
 enum {
-    kMaxIndicesToCheck = 32, // used when enumerating supported formats and profiles
+    kMaxIndicesToCheck = 64, // used when enumerating supported formats and profiles
 };
 
 // OMX errors are directly mapped into status_t range if
