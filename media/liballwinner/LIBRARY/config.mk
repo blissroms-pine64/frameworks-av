@@ -252,6 +252,8 @@ ifeq ($(CONFIG_OS), $(OPTION_OS_ANDROID))
         CONFIG_OS_VERSION = $(OPTION_OS_VERSION_ANDROID_6_0)
     else ifeq ($(os_version), 7.0)
         CONFIG_OS_VERSION = $(OPTION_OS_VERSION_ANDROID_6_0)
+    else ifeq ($(os_version), 7.1)
+        CONFIG_OS_VERSION = $(OPTION_OS_VERSION_ANDROID_6_0)
     else
         $(warning $(os_version))
         CONFIG_OS_VERSION = -1
