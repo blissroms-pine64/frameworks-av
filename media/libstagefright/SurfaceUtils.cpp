@@ -186,8 +186,11 @@ status_t pushBlankBuffersToNativeWindow(ANativeWindow *nativeWindow /* nonnull *
             break;
         }
 
-		if(img != NULL)
-        	*img = 0;
+        if (img == NULL) {
+            ALOGE("error pushing blank frames: lock returned NULL buffer");
+            break;
+        }
+        *img = 0;
 
         err = buf->unlock();
         if (err != NO_ERROR) {
@@ -232,4 +235,3 @@ error:
 }
 
 }  // namespace android
-
