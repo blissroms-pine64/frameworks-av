@@ -321,13 +321,9 @@ status_t BnCrypto::onTransact(
 
             if (overflow || sumSubsampleSizes != totalSize) {
                 result = -EINVAL;
-<<<<<<< HEAD
             } else if (totalSize > sharedBuffer->size()) {
                 result = -EINVAL;
             } else if ((size_t)offset > sharedBuffer->size() - totalSize) {
-=======
-            } else if (offset + totalSize > sharedBuffer->size()) {
->>>>>>> 78b5268... Allwinner A64 changes
                 result = -EINVAL;
             } else {
                 result = decrypt(

@@ -36,6 +36,33 @@
 #define PHY_OFFSET 0x40000000
 #endif
 
+#define NATIVE_WINDOW_SETPARAMETER              50
+#define NATIVE_WINDOW_GETPARAMETER              51
+
+typedef struct {
+    ion_user_handle_t handle;
+    unsigned int phys_addr;
+    unsigned int size;
+} sunxi_phys_data;
+
+#define ION_IOC_SUNXI_PHYS_ADDR     7
+
+static unsigned long ion_getphyadr(int fd,ion_user_handle_t handle)
+{
+    int ret = 0;
+    struct ion_custom_data custom_data;
+    sunxi_phys_data phys_data;
+
+    custom_data.cmd = ION_IOC_SUNXI_PHYS_ADDR;
+    phys_data.handle = handle;
+    custom_data.arg = (unsigned long)&phys_data;
+    ret = ioctl(fd, ION_IOC_CUSTOM, &custom_data);
+    if(ret < 0)
+        return 0;
+
+    return phys_data.phys_addr;
+}
+
 #if 0
 /* NUM_OF_PICTURES_KEEP_IN_LIST has defined in config.h */
 #if(CONFIG_PRODUCT == OPTION_PRODUCT_TVBOX)
@@ -90,7 +117,7 @@ typedef struct LayerCtrlContext
     int                  bLayerInitialized;
     int                  bLayerShowed;
     int                  bProtectFlag;
-    
+
     //* use when render derect to hardware layer.
     VPictureNode         picNodes[NUM_OF_PICTURES_KEEP_IN_NODE];
 
@@ -106,7 +133,7 @@ typedef struct LayerCtrlContext
 
 //* this function just for 3D case.
 //* just init 32-line buffer to black color.
-//* (when the two stream display to 2D, the 32-line buffer will cause "Green Screen" if not init, 
+//* (when the two stream display to 2D, the 32-line buffer will cause "Green Screen" if not init,
 //*  as buffer have make 32-align)
 //* if init the whole buffer, it would take too much time.
 int initPartialGpuBuffer(char* pDataBuf, ANativeWindowBuffer* pWindowBuf, LayerCtrlContext* lc)
@@ -145,7 +172,7 @@ int initPartialGpuBuffer(char* pDataBuf, ANativeWindowBuffer* pWindowBuf, LayerC
 }
 
 //* copy from ACodec.cpp
-static int pushBlankBuffersToNativeWindow(LayerCtrlContext* lc) 
+static int pushBlankBuffersToNativeWindow(LayerCtrlContext* lc)
 {
     logd("pushBlankBuffersToNativeWindow: pNativeWindow = %p",lc->pNativeWindow);
 
@@ -324,13 +351,13 @@ error:
 static int SendThreeBlackFrameToGpu(LayerCtrlContext* lc)
 {
     logd("SendThreeBlackFrameToGpu()");
-    
+
     ANativeWindowBuffer* pWindowBuf;
     void*                pDataBuf;
     int                  i;
     int                  err;
 
-    //* it just work on A80-box and H8         
+    //* it just work on A80-box and H8
 #if((CONFIG_CHIP==OPTION_CHIP_1639 || CONFIG_CHIP==OPTION_CHIP_1673 || \
 	CONFIG_CHIP == OPTION_CHIP_1680 || CONFIG_CHIP == OPTION_CHIP_1689) && \
 	(CONFIG_PRODUCT==OPTION_PRODUCT_TVBOX))
@@ -339,7 +366,7 @@ static int SendThreeBlackFrameToGpu(LayerCtrlContext* lc)
         logv("skip %s", __func__);
          return 0;
     }
-    
+
     for(i = 0;i < NUM_OF_PICTURES_KEEP_IN_LIST;i++)
     {
         err = lc->pNativeWindow->dequeueBuffer_DEPRECATED(lc->pNativeWindow, &pWindowBuf);
@@ -362,13 +389,13 @@ static int SendThreeBlackFrameToGpu(LayerCtrlContext* lc)
             memset((char*)pDataBuf,0x10,(pWindowBuf->height * pWindowBuf->stride));
             memset((char*)pDataBuf + pWindowBuf->height * pWindowBuf->stride,0x80,(pWindowBuf->height * pWindowBuf->stride)/2);
         }
-        
+
         int nBufAddr[7] = {0};
         //nBufAddr[6] = HAL_PIXEL_FORMAT_AW_NV12;
         nBufAddr[6] = HAL_PIXEL_FORMAT_AW_FORCE_GPU;
         lc->pNativeWindow->perform(lc->pNativeWindow, NATIVE_WINDOW_SET_VIDEO_BUFFERS_INFO,	nBufAddr[0], nBufAddr[1],
         nBufAddr[2], nBufAddr[3], nBufAddr[4], nBufAddr[5], nBufAddr[6]);
-        
+
         //* unlock the buffer.
         {
             GraphicBufferMapper& graphicMapper = GraphicBufferMapper::get();
@@ -387,13 +414,13 @@ static int SendThreeBlackFrameToGpu(LayerCtrlContext* lc)
 static int MakeSureFramesToShow(LayerCtrlContext* lc)
 {
 	logd("MakeSureFramesToShow()");
-    
+
     ANativeWindowBuffer* pWindowBuf[32];
     void*                pDataBuf;
     int                  i;
     int                  err;
 	int					 bufCnt = lc->nGpuBufferCount;
-     
+
     for(i = 0;i < bufCnt -1; i++)
     {
         err = lc->pNativeWindow->dequeueBuffer_DEPRECATED(lc->pNativeWindow, &pWindowBuf[i]);
@@ -402,17 +429,17 @@ static int MakeSureFramesToShow(LayerCtrlContext* lc)
             logw("dequeue buffer fail, return value from dequeueBuffer_DEPRECATED() method is %d.", err);
             break;
         }
-        
+
     	logv("dequeue i = %d, handle: 0x%x", i, pWindowBuf[i]->handle);
 
     }
 
     for(i--; i >= 0; i--)
-    {        
+    {
     	logv("cancel i = %d, handle: 0x%x", i, pWindowBuf[i]->handle);
         lc->pNativeWindow->cancelBuffer(lc->pNativeWindow, pWindowBuf[i], -1);
     }
-	
+
     return 0;
 }
 
@@ -425,7 +452,7 @@ static int SetLayerParam(LayerCtrlContext* lc)
     logd("SetLayerParam: dispW(%d), dispH(%d), buffercount(%d), bProtectFlag(%d), bIsSoftDecoderFlag(%d)",
           lc->nDisplayWidth,lc->nDisplayHeight,lc->nGpuBufferCount,
           lc->bProtectFlag,lc->bIsSoftDecoderFlag);
-    
+
     int          pixelFormat;
     unsigned int nGpuBufWidth;
     unsigned int nGpuBufHeight;
@@ -473,9 +500,9 @@ static int SetLayerParam(LayerCtrlContext* lc)
 
     //* add other usage
     lc->nUsage |= GRALLOC_USAGE_SW_READ_NEVER     |
-                  GRALLOC_USAGE_HW_TEXTURE        | 
+                  GRALLOC_USAGE_HW_TEXTURE        |
                   GRALLOC_USAGE_EXTERNAL_DISP;
-    
+
     switch(lc->eReceivePixelFormat)
     {
         case PIXEL_FORMAT_YV12:             //* why YV12 use this pixel format.
@@ -492,28 +519,28 @@ static int SetLayerParam(LayerCtrlContext* lc)
             break;
         }
     }
-    
+
     native_window_set_usage(lc->pNativeWindow,lc->nUsage);
     native_window_set_scaling_mode(lc->pNativeWindow, NATIVE_WINDOW_SCALING_MODE_SCALE_TO_WINDOW);
 
     #if 0
     nGpuBufWidth  = (lc->nWidth + 15) & ~15;
     nGpuBufHeight = (lc->nHeight + 15) & ~15;
-    
+
     //A10's GPU has a bug, we can avoid it
     if(nGpuBufHeight%8 != 0)
     {
         logw("original picture align_width[%d], height[%d] mod8 = %d", nGpuBufWidth, nGpuBufHeight, nGpuBufHeight%8);
         if((nGpuBufWidth*nGpuBufHeight)%256 != 0)
         {
-            logw("original picture align_width[%d]*height[%d] mod 1024 = %d", 
+            logw("original picture align_width[%d]*height[%d] mod 1024 = %d",
                    nGpuBufWidth, nGpuBufHeight, (nGpuBufWidth*nGpuBufHeight)%1024);
             nGpuBufHeight = (nGpuBufHeight+7)&~7;
             logw("change picture height to [%d] when render to gpu", nGpuBufHeight);
         }
     }
     #endif
-    
+
     nGpuBufWidth  = lc->nWidth;  //* restore nGpuBufWidth to mWidth;
     nGpuBufHeight = lc->nHeight;
 
@@ -539,16 +566,16 @@ static int SetLayerParam(LayerCtrlContext* lc)
         loge("error: the nativeWindow buffer Count is 0!");
         return -1;
     }
-    
+
     return 0;
 }
 
 LayerCtrl* NewLayerInit(void* pNativeWindow, int bProtectedFlag)
 {
     logv("LayerInit, pNativeWindow = %p",pNativeWindow);
-    
+
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)malloc(sizeof(LayerCtrlContext));
     if(lc == NULL)
     {
@@ -582,7 +609,7 @@ void NewLayerRelease(LayerCtrl* l, int bKeepPictureOnScreen)
     VideoPicture mPicBufInfo;
 
 	CEDARX_UNUSE(bKeepPictureOnScreen);
-	
+
     lc = (LayerCtrlContext*)l;
 
     memset(&mPicBufInfo, 0, sizeof(VideoPicture));
@@ -609,7 +636,7 @@ void NewLayerRelease(LayerCtrl* l, int bKeepPictureOnScreen)
 			ANativeWindowBuffer* pWindowBuf = lc->mGpuBufferInfo[i].pWindowBuf;
 	        GraphicBufferMapper& graphicMapper = GraphicBufferMapper::get();
 	        graphicMapper.unlock(pWindowBuf->handle);
-			
+
 	        lc->pNativeWindow->cancelBuffer_DEPRECATED(lc->pNativeWindow, pWindowBuf);
 			lc->mGpuBufferInfo[i].nDequeueFlag = 0;
         }
@@ -643,18 +670,18 @@ void NewLayerRelease(LayerCtrl* l, int bKeepPictureOnScreen)
             loge("pushBlankBuffersToNativeWindow appear error!: ret = %d",ret);
         }
     }
-    
-    free(lc);    
+
+    free(lc);
 }
 
 void NewLayerResetNativeWindow(LayerCtrl* l,void* pNativeWindow)
 {
     logd("LayerResetNativeWindow : %p ",pNativeWindow);
-    
+
     LayerCtrlContext* lc;
     VideoPicture mPicBufInfo;
 
-    lc = (LayerCtrlContext*)l; 
+    lc = (LayerCtrlContext*)l;
 
     memset(&mPicBufInfo, 0, sizeof(VideoPicture));
 
@@ -668,7 +695,7 @@ void NewLayerResetNativeWindow(LayerCtrl* l,void* pNativeWindow)
 			ANativeWindowBuffer* pWindowBuf = lc->mGpuBufferInfo[i].pWindowBuf;
 	        GraphicBufferMapper& graphicMapper = GraphicBufferMapper::get();
 	        graphicMapper.unlock(pWindowBuf->handle);
-			
+
 	        lc->pNativeWindow->cancelBuffer_DEPRECATED(lc->pNativeWindow, pWindowBuf);
 			lc->mGpuBufferInfo[i].nDequeueFlag = 0;
         }
@@ -680,19 +707,19 @@ void NewLayerResetNativeWindow(LayerCtrl* l,void* pNativeWindow)
 
     if(lc->pNativeWindow != NULL)
         lc->bLayerInitialized = 0;
-    
+
     return ;
 }
 
 int NewLayerSetExpectPixelFormat(LayerCtrl* l, enum EPIXELFORMAT ePixelFormat)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
 
     logv("Layer set expected pixel format, format = %d", (int)ePixelFormat);
-    
-    if(ePixelFormat == PIXEL_FORMAT_NV12 || 
+
+    if(ePixelFormat == PIXEL_FORMAT_NV12 ||
        ePixelFormat == PIXEL_FORMAT_NV21 ||
        ePixelFormat == PIXEL_FORMAT_YV12)           //* add new pixel formats supported by gpu here.
     {
@@ -709,7 +736,7 @@ int NewLayerSetExpectPixelFormat(LayerCtrl* l, enum EPIXELFORMAT ePixelFormat)
     if(lc->eReceivePixelFormat == PIXEL_FORMAT_NV21)
         lc->b4KAlignFlag = 1;
 #endif
-    
+
     return 0;
 }
 
@@ -717,11 +744,11 @@ int NewLayerSetExpectPixelFormat(LayerCtrl* l, enum EPIXELFORMAT ePixelFormat)
 int NewLayerSetPictureSize(LayerCtrl* l, int nWidth, int nHeight)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
 
     logv("Layer set picture size, width = %d, height = %d", nWidth, nHeight);
-    
+
     lc->nWidth         = nWidth;
     lc->nHeight        = nHeight;
     lc->nDisplayWidth  = nWidth;
@@ -729,7 +756,7 @@ int NewLayerSetPictureSize(LayerCtrl* l, int nWidth, int nHeight)
     lc->nLeftOff       = 0;
     lc->nTopOff        = 0;
     lc->bLayerInitialized = 0;
-    
+
     return 0;
 }
 
@@ -737,13 +764,13 @@ int NewLayerSetPictureSize(LayerCtrl* l, int nWidth, int nHeight)
 int NewLayerSetDisplayRegion(LayerCtrl* l, int nLeftOff, int nTopOff, int nDisplayWidth, int nDisplayHeight)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
 
     logv("Layer set display region, leftOffset = %d, topOffset = %d, displayWidth = %d, displayHeight = %d",
         nLeftOff, nTopOff, nDisplayWidth, nDisplayHeight);
     int scaler = (lc->bVideoWithTwoStreamFlag == 1) ? 2 : 1;
-    
+
     if(nDisplayWidth != 0 && nDisplayHeight != 0)
     {
         lc->nDisplayWidth     = nDisplayWidth;
@@ -762,7 +789,7 @@ int NewLayerSetDisplayRegion(LayerCtrl* l, int nLeftOff, int nTopOff, int nDispl
             crop.bottom = lc->nTopOff + displayHeight * scaler;
             lc->pNativeWindow->perform(lc->pNativeWindow, NATIVE_WINDOW_SET_CROP, &crop);
         }
-        
+
         return 0;
     }
     else
@@ -776,7 +803,7 @@ int NewLayerSetBufferCount(LayerCtrl* l, int nBufferCount)
     lc = (LayerCtrlContext*)l;
 
     logv("LayerSetBufferCount: count = %d",nBufferCount);
-    
+
 //    lc->nGpuBufferCount = nBufferCount + NUM_OF_PICTURES_KEEP_IN_LIST;
     lc->nGpuBufferCount = nBufferCount;
 
@@ -851,7 +878,7 @@ int NewLayerGetDisplayFPS(LayerCtrl* l)
     logw("not implement the function NewLayerGetDisplayFPS");
     return -1;
 }
-#endif 
+#endif
 
 int NewLayerSetIsSoftDecoderFlag(LayerCtrl* l, int bIsSoftDecoderFlag)
 {
@@ -882,17 +909,17 @@ int NewLayerDequeueBuffer(LayerCtrl* l,VideoPicture** ppVideoPicture, int bInitF
 {
 	logv("LayerDequeueBuffer, *ppVideoPicture(%p),bInitFlag(%d)",
 		*ppVideoPicture,bInitFlag);
-	
+
     LayerCtrlContext* lc;
 	VideoPicture* pPicture = NULL;
-    
+
     lc = (LayerCtrlContext*)l;
 
-    logv("LayerDequeueBuffer");    
+    logv("LayerDequeueBuffer");
 
     //* dequeue a buffer from the native window object, set it to a picture buffer wrapper.
     ANativeWindowBuffer* pWindowBuf = NULL;
-	
+
 #if ((LINUX_VERSION == LINUX_VERSION_3_10) || (CONFIG_OS_VERSION >= OPTION_OS_VERSION_ANDROID_5_0))
 	ion_user_handle_t handle_ion = 0;
 #else
@@ -912,19 +939,19 @@ int NewLayerDequeueBuffer(LayerCtrl* l,VideoPicture** ppVideoPicture, int bInitF
         logw("pNativeWindow is null when dequeue buffer");
         return -1;
     }
-        
+
     if(lc->bLayerInitialized == 0)
     {
         if(SetLayerParam(lc) != 0)
         {
             loge("can not initialize layer.");
             return -1;
-        }        
-        lc->bLayerInitialized = 1;        
+        }
+        lc->bLayerInitialized = 1;
     }
-    
+
 dequeue_buffer:
-    
+
     //* dequeue a buffer from the nativeWindow object.
     err = lc->pNativeWindow->dequeueBuffer_DEPRECATED(lc->pNativeWindow, &pWindowBuf);
     if(err != 0)
@@ -977,7 +1004,7 @@ dequeue_buffer:
 //for mali GPU
 #if(GPU_TYPE_MALI == 1)
 			private_handle_t* hnd = (private_handle_t *)(pWindowBuf->handle);
-#else 
+#else
             IMG_native_handle_t* hnd = (IMG_native_handle_t*)(pWindowBuf->handle);
 #endif
 
@@ -1029,7 +1056,7 @@ dequeue_buffer:
             break;
         }
     }
-    
+
     if(i == lc->nGpuBufferCount)
     {
         loge("not enouth gpu buffer , should not run here");
@@ -1056,7 +1083,7 @@ dequeue_buffer:
 	    if(lc->b4KAlignFlag == 1)
 		{
 		    uintptr_t tmpAddr = (uintptr_t)pPicture->pData1;
-		    tmpAddr     = (tmpAddr + 4095) & ~4095;		    
+		    tmpAddr     = (tmpAddr + 4095) & ~4095;
 		    pPicture->pData1      = (char *)tmpAddr;
 		    pPicture->phyCBufAddr = (pPicture->phyCBufAddr + 4095) & ~4095;
 		}
@@ -1068,22 +1095,22 @@ dequeue_buffer:
 			logv("** dequeue , i(%d), used(%d), pPicture(%p), pNodeWindowBuf(%p),pWindowBuf(%p)",
 					i,lc->picNodes[i].bUsed,lc->picNodes[i].pPicture,
 					lc->picNodes[i].pNodeWindowBuf, pWindowBuf);
-			if(lc->picNodes[i].bUsed == 1 
+			if(lc->picNodes[i].bUsed == 1
 			   && lc->picNodes[i].pPicture != NULL
 			   && lc->picNodes[i].pNodeWindowBuf == pWindowBuf)
-			{				
+			{
 				pPicture = lc->picNodes[i].pPicture ;
 				lc->picNodes[i].bUsed = 0;
 				break;
-			}				
+			}
 		}
 		if(i == NUM_OF_PICTURES_KEEP_IN_NODE)
 		{
 			loge("hava no unused picture in the picNode, pDataBuf = %p",pDataBuf);
 			return -1;
 		}
-	}        
-	
+	}
+
 	*ppVideoPicture = pPicture;
     return 0;
 }
@@ -1096,7 +1123,7 @@ int NewLayerQueueBuffer(LayerCtrl* l,VideoPicture* pInPicture, int bValid)
     int               i   = 0;
     char*             pBuf   = NULL;
     int               nBufId = -1;
-    
+
     lc = (LayerCtrlContext*)l;
 
     if(lc->bLayerInitialized == 0)
@@ -1106,9 +1133,9 @@ int NewLayerQueueBuffer(LayerCtrl* l,VideoPicture* pInPicture, int bValid)
             loge("can not initialize layer.");
             return -1;
         }
-        
+
         lc->bLayerInitialized = 1;
-        
+
     }
 
 	for(i = 0; i<NUM_OF_PICTURES_KEEP_IN_NODE; i++)
@@ -1129,12 +1156,12 @@ int NewLayerQueueBuffer(LayerCtrl* l,VideoPicture* pInPicture, int bValid)
 	//loge("*** LayerQueueBuffer pInPicture = %p, bValid = %d",pInPicture,bValid);
     pBuf   = (char*)pInPicture->phyYBufAddr;
     nBufId = pInPicture->nBufId;
-    
+
 
 
     pWindowBuf = lc->mGpuBufferInfo[nBufId].pWindowBuf;
     lc->picNodes[i].pNodeWindowBuf = pWindowBuf;
-    
+
     //* unlock the buffer.
     {
         GraphicBufferMapper& graphicMapper = GraphicBufferMapper::get();
@@ -1147,7 +1174,7 @@ int NewLayerQueueBuffer(LayerCtrl* l,VideoPicture* pInPicture, int bValid)
         lc->pNativeWindow->cancelBuffer_DEPRECATED(lc->pNativeWindow, pWindowBuf);
 
     lc->mGpuBufferInfo[nBufId].nDequeueFlag = 0;
-    
+
     logv("******LayerQueueBuffer finish!");
     return 0;
 }
@@ -1166,7 +1193,7 @@ int NewLayerReleaseBuffer(LayerCtrl* l,VideoPicture* pPicture)
 	struct ion_handle *handle_ion  = NULL;
 	handle_ion = (struct ion_handle *)pPicture->pPrivate;
 	ion_free(lc->ionFd,handle_ion);
-#endif	
+#endif
 
 	return 0;
 }
@@ -1178,9 +1205,9 @@ int NewLayerCtrlShowVideo(LayerCtrl* l)
     int               i;
 
     lc = (LayerCtrlContext*)l;
-    
+
     logv("LayerCtrlShowVideo, current show flag = %d", lc->bLayerShowed);
-    
+
     if(lc->bLayerShowed == 0)
     {
         if(lc->pNativeWindow != NULL)
@@ -1206,9 +1233,9 @@ int NewLayerCtrlHideVideo(LayerCtrl* l)
     int               i;
 
     lc = (LayerCtrlContext*)l;
-    
+
     logv("LayerCtrlHideVideo, current show flag = %d", lc->bLayerShowed);
-    
+
     if(lc->bLayerShowed == 1)
     {
         if(lc->pNativeWindow != NULL)
@@ -1235,7 +1262,7 @@ int NewLayerCtrlIsVideoShow(LayerCtrl* l)
     lc = (LayerCtrlContext*)l;
 
     logv("LayerCtrlIsVideoShow : bLayerShowed = %d",lc->bLayerShowed);
-    
+
     return lc->bLayerShowed;
 }
 
@@ -1248,7 +1275,7 @@ int NewLayerCtrlHoldLastPicture(LayerCtrl* l, int bHold)
     lc = (LayerCtrlContext*)l;
 
     lc->bHoldLastPictureFlag = bHold;
-    
+
     return 0;
 }
 
@@ -1340,7 +1367,7 @@ enum EDISPLAY3DMODE NewLayerGetDisplay3DMode(LayerCtrl* l)
     return DISPLAY_3D_MODE_2D;
 }
 
-LayerControlOpsT mNewLayerControlOps = 
+LayerControlOpsT mNewLayerControlOps =
 {
     LayerInit:                       NewLayerInit                      ,//
     LayerRelease:                    NewLayerRelease                   ,
@@ -1366,14 +1393,12 @@ LayerControlOpsT mNewLayerControlOps =
     LayerGetRotationAngle:           NewLayerGetRotationAngle          ,
     LayerSetCallback:                NewLayerSetCallback               ,
     LayerSetBufferCount:             NewLayerSetBufferCount            ,
-    LayerSetVideoWithTwoStreamFlag:  NewLayerSetVideoWithTwoStreamFlag ,        
+    LayerSetVideoWithTwoStreamFlag:  NewLayerSetVideoWithTwoStreamFlag ,
     LayerSetIsSoftDecoderFlag:       NewLayerSetIsSoftDecoderFlag      ,
     LayerResetNativeWindow:          NewLayerResetNativeWindow         ,
     LayerReleaseBuffer:              NewLayerReleaseBuffer             ,
     LayerGetPicNode:                 NewLayerGetPicNode                ,
     LayerGetAddedPicturesCount:      NewLayerGetAddedPicturesCount     ,
-    LayerGetDisplayFPS:              NewLayerGetDisplayFPS             
-   
+    LayerGetDisplayFPS:              NewLayerGetDisplayFPS
+
 };
-
-

@@ -33,6 +33,33 @@
 static VideoPicture* gLastPicture = NULL;
 
 
+#define NATIVE_WINDOW_SETPARAMETER              50
+#define NATIVE_WINDOW_GETPARAMETER              51
+
+typedef struct {
+    ion_user_handle_t handle;
+    unsigned int phys_addr;
+    unsigned int size;
+} sunxi_phys_data;
+
+#define ION_IOC_SUNXI_PHYS_ADDR     7
+
+static unsigned long ion_getphyadr(int fd,ion_user_handle_t handle)
+{
+    int ret = 0;
+    struct ion_custom_data custom_data;
+    sunxi_phys_data phys_data;
+
+    custom_data.cmd = ION_IOC_SUNXI_PHYS_ADDR;
+    phys_data.handle = handle;
+    custom_data.arg = (unsigned long)&phys_data;
+    ret = ioctl(fd, ION_IOC_CUSTOM, &custom_data);
+    if(ret < 0)
+        return 0;
+
+    return phys_data.phys_addr;
+}
+
 typedef struct VPictureNode_t VPictureNode;
 struct VPictureNode_t
 {
@@ -62,12 +89,12 @@ typedef struct LayerCtrlContext
     int                  nPreNativeWindowOutputType;
 	int 				 bFirstFrameIsShowed; // 0->first not showed, 1->is already showed
 	int					 nOutputTypeChanged;	//0:no change  1:gpu->0 copy
-    
+
     //* use when render to gpu.
     VideoPicture         bufferWrappers[32];
     int                  bBufferWrapperUsed[32];
     ANativeWindowBuffer* pWindowBufs[32];
-    
+
     //* use when render derect to hardware layer.
     VPictureNode         *pKeepPicNode;
 
@@ -80,7 +107,7 @@ typedef struct LayerCtrlContext
 }LayerCtrlContext;
 
 static int SetLayerParam(LayerCtrlContext* lc);
-static void setHwcLayerPictureInfo(libhwclayerpara_t* pHwcLayerPictureInfo, 
+static void setHwcLayerPictureInfo(libhwclayerpara_t* pHwcLayerPictureInfo,
                                    VideoPicture*      pPicture,
                                    VideoPicture*      pSecondPictureOf3D);
 static int SendThreeBlackFrameToGpu(LayerCtrlContext* lc);
@@ -89,9 +116,9 @@ LayerCtrl* LayerInit(void* pNativeWindow, int bProtectedFlag)
 {
     CDX_PLAYER_UNUSE(bProtectedFlag);
     LayerCtrlContext* lc;
-    
+
     logv("LayerInit.");
-    
+
     lc = (LayerCtrlContext*)malloc(sizeof(LayerCtrlContext));
     if(lc == NULL)
     {
@@ -100,16 +127,19 @@ LayerCtrl* LayerInit(void* pNativeWindow, int bProtectedFlag)
     }
     memset(lc, 0, sizeof(LayerCtrlContext));
     lc->picDump = 0;
-    
+
     lc->pNativeWindow = (ANativeWindow*)pNativeWindow;
-    
-    int nOutputType = lc->pNativeWindow->perform(lc->pNativeWindow, 
-                                       NATIVE_WINDOW_GETPARAMETER, 
-                                       NATIVE_WINDOW_CMD_GET_SURFACE_TEXTURE_TYPE, 
+
+    int nOutputType = 0;
+#if(CONFIG_PRODUCT==OPTION_PRODUCT_TVBOX && CONFIG_CHIP!=OPTION_CHIP_1651)
+    nOutputType = lc->pNativeWindow->perform(lc->pNativeWindow,
+                                       NATIVE_WINDOW_GETPARAMETER,
+                                       NATIVE_WINDOW_CMD_GET_SURFACE_TEXTURE_TYPE,
                                        0);
     lc->nPreNativeWindowOutputType = nOutputType;
-    
-    if(0 == nOutputType)                                       
+#endif
+
+    if(0 == nOutputType)
     {
         lc->eReceivePixelFormat    = PIXEL_FORMAT_YV12;
         lc->bRenderToHardwareLayer = 0;
@@ -131,8 +161,8 @@ LayerCtrl* LayerInit(void* pNativeWindow, int bProtectedFlag)
 #endif
     }
 
-    //* also 0 copy on A20    
-#if(CONFIG_CHIP==OPTION_CHIP_1651) 
+    //* also 0 copy on A20
+#if(CONFIG_CHIP==OPTION_CHIP_1651)
 	lc->eReceivePixelFormat    = PIXEL_FORMAT_YV12;
     lc->bRenderToHardwareLayer = 1;
 #endif
@@ -146,8 +176,8 @@ LayerCtrl* LayerInit(void* pNativeWindow, int bProtectedFlag)
 #else                               //* on others, Y-Align is 16, C-Align is 8,
     lc->nGpuYAlign = 16;
     lc->nGpuCAlign = 8;
-#endif    
-    //* open the memory module, we need get physical address of a picture buffer 
+#endif
+    //* open the memory module, we need get physical address of a picture buffer
     //* by MemAdapterGetPhysicAddress().
     if(gLastPicture == NULL)
         MemAdapterOpen();
@@ -162,7 +192,7 @@ LayerCtrl* LayerInit(void* pNativeWindow, int bProtectedFlag)
 		return NULL;
 	}
 	memset(lc->pKeepPicNode,0,NUM_OF_PICTURES_KEEP_IN_LIST*sizeof(VPictureNode));
-	
+
     return (LayerCtrl*)lc;
 }
 
@@ -171,11 +201,11 @@ void LayerRelease(LayerCtrl* l, int bKeepPictureOnScreen)
 {
 	CDX_PLAYER_UNUSE(bKeepPictureOnScreen);
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
 
     logv("Layer release");
-    
+
 #if((CONFIG_CHIP==OPTION_CHIP_1639 || CONFIG_CHIP==OPTION_CHIP_1673 || CONFIG_CHIP == OPTION_CHIP_1680) && (CONFIG_PRODUCT==OPTION_PRODUCT_TVBOX))
     //* if it is 0-copy, we should send 3 black frame to gpu when exit for
     //* avoiding a bug of GPU(Green screen when switch video).
@@ -204,22 +234,22 @@ void LayerRelease(LayerCtrl* l, int bKeepPictureOnScreen)
 		free(lc->pKeepPicNode);
 		lc->pKeepPicNode = NULL;
 	}
-    
+
     //* free the memory module.
     if(gLastPicture == NULL)
         MemAdapterClose();
-    
-    free(lc);    
+
+    free(lc);
 }
 
 int LayerSetRenderToHardwareFlag(LayerCtrl* l,int bFlag)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
 
     logv("LayerSetRenderToHardware : %d",bFlag);
-    
+
     if(lc == NULL)
     {
         loge("error: the lc is null!");
@@ -232,11 +262,11 @@ int LayerSetRenderToHardwareFlag(LayerCtrl* l,int bFlag)
 int LayerSetDeinterlaceFlag(LayerCtrl* l,int bFlag)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
 
     logv("LayerSetDeinterlaceFlag : %d",bFlag);
-    
+
     if(lc == NULL)
     {
         loge("error: the lc is null!");
@@ -249,14 +279,14 @@ int LayerSetDeinterlaceFlag(LayerCtrl* l,int bFlag)
 int LayerSetExpectPixelFormat(LayerCtrl* l, enum EPIXELFORMAT ePixelFormat)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("Layer set expected pixel format, format = %d", (int)ePixelFormat);
-    
+
     if(0 == lc->bRenderToHardwareLayer)
     {
-        if(ePixelFormat == PIXEL_FORMAT_NV12 || 
+        if(ePixelFormat == PIXEL_FORMAT_NV12 ||
            ePixelFormat == PIXEL_FORMAT_NV21 ||
            ePixelFormat == PIXEL_FORMAT_YV12)           //* add new pixel formats supported by gpu here.
         {
@@ -287,7 +317,7 @@ int LayerSetExpectPixelFormat(LayerCtrl* l, enum EPIXELFORMAT ePixelFormat)
             return -1;
         }
     }
-    
+
     return 0;
 }
 
@@ -295,11 +325,11 @@ int LayerSetExpectPixelFormat(LayerCtrl* l, enum EPIXELFORMAT ePixelFormat)
 enum EPIXELFORMAT LayerGetPixelFormat(LayerCtrl* l)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("Layer get pixel format, return %d", lc->eReceivePixelFormat);
-    
+
     return lc->eReceivePixelFormat;
 }
 
@@ -307,11 +337,11 @@ enum EPIXELFORMAT LayerGetPixelFormat(LayerCtrl* l)
 int LayerSetPictureSize(LayerCtrl* l, int nWidth, int nHeight)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("Layer set picture size, width = %d, height = %d", nWidth, nHeight);
-    
+
     lc->nWidth         = nWidth;
     lc->nHeight        = nHeight;
     lc->nDisplayWidth  = nWidth;
@@ -319,7 +349,7 @@ int LayerSetPictureSize(LayerCtrl* l, int nWidth, int nHeight)
     lc->nLeftOff       = 0;
     lc->nTopOff        = 0;
     lc->bLayerInitialized = 0;
-    
+
     return 0;
 }
 
@@ -327,12 +357,12 @@ int LayerSetPictureSize(LayerCtrl* l, int nWidth, int nHeight)
 int LayerSetDisplayRegion(LayerCtrl* l, int nLeftOff, int nTopOff, int nDisplayWidth, int nDisplayHeight)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("Layer set display region, leftOffset = %d, topOffset = %d, displayWidth = %d, displayHeight = %d",
         nLeftOff, nTopOff, nDisplayWidth, nDisplayHeight);
-    
+
     if(nDisplayWidth != 0 && nDisplayHeight != 0)
     {
         lc->nDisplayWidth  = nDisplayWidth;
@@ -350,13 +380,13 @@ int LayerSetDisplayRegion(LayerCtrl* l, int nLeftOff, int nTopOff, int nDisplayW
 int LayerSetPicture3DMode(LayerCtrl* l, enum EPICTURE3DMODE ePicture3DMode)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("Layer set picture 3d mode, mode = %d", (int)ePicture3DMode);
-    
+
     lc->ePicture3DMode = ePicture3DMode;
-    
+
     return 0;
 }
 
@@ -364,11 +394,11 @@ int LayerSetPicture3DMode(LayerCtrl* l, enum EPICTURE3DMODE ePicture3DMode)
 enum EPICTURE3DMODE LayerGetPicture3DMode(LayerCtrl* l)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("Layer get picture 3d mode, mode = %d", (int)lc->ePicture3DMode);
-    
+
     return lc->ePicture3DMode;
 }
 
@@ -378,19 +408,19 @@ int LayerSetDisplay3DMode(LayerCtrl* l, enum EDISPLAY3DMODE eDisplay3DMode)
     LayerCtrlContext* lc;
     video3Dinfo_t     hwc3DInfo;
     int               err;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("Layer set display 3d mode, mode = %d", (int)eDisplay3DMode);
-    
+
     lc->eDisplay3DMode = eDisplay3DMode;
-    
+
     if(lc->bLayerInitialized == 0)
         return 0;
-    
+
     hwc3DInfo.width  = lc->nWidth;
     hwc3DInfo.height = lc->nHeight;
-    
+
     switch(lc->eReceivePixelFormat)
     {
         case PIXEL_FORMAT_YUV_PLANER_420:
@@ -410,7 +440,7 @@ int LayerSetDisplay3DMode(LayerCtrl* l, enum EDISPLAY3DMODE eDisplay3DMode)
             break;
         }
     }
-    
+
     switch(lc->ePicture3DMode)
     {
         case PICTURE_3D_MODE_TWO_SEPERATED_PICTURE:
@@ -429,7 +459,7 @@ int LayerSetDisplay3DMode(LayerCtrl* l, enum EDISPLAY3DMODE eDisplay3DMode)
             hwc3DInfo.src_mode = HWC_3D_SRC_MODE_NORMAL;
             break;
     }
-    
+
     switch(eDisplay3DMode)
     {
         case DISPLAY_3D_MODE_3D:
@@ -443,7 +473,7 @@ int LayerSetDisplay3DMode(LayerCtrl* l, enum EDISPLAY3DMODE eDisplay3DMode)
             hwc3DInfo.display_mode = HWC_3D_OUT_MODE_ORIGINAL;
             break;
     }
-    
+
     err = lc->pNativeWindow->perform(lc->pNativeWindow, NATIVE_WINDOW_SETPARAMETER, HWC_LAYER_SET3DMODE, &hwc3DInfo);
     if(err == 0)
     {
@@ -461,11 +491,11 @@ int LayerSetDisplay3DMode(LayerCtrl* l, enum EDISPLAY3DMODE eDisplay3DMode)
 enum EDISPLAY3DMODE LayerGetDisplay3DMode(LayerCtrl* l)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     logv("Layer get display 3d mode, mode = %d", (int)lc->eDisplay3DMode);
-    
+
     return lc->eDisplay3DMode;
 }
 #endif
@@ -474,7 +504,7 @@ int LayerGetRotationAngle(LayerCtrl* l)
 {
     LayerCtrlContext* lc;
     int nRotationAngle = 0;
-    
+
     lc = (LayerCtrlContext*)l;
 
     if(lc == NULL)
@@ -513,17 +543,17 @@ int LayerGetRotationAngle(LayerCtrl* l)
     }
     else
         nRotationAngle = 0;
-    
+
     logv("Layer get rotation angle , nRotationAngle = %d", nRotationAngle);
 
     return nRotationAngle;
-    
+
 }
 
 int LayerSetCallback(LayerCtrl* l, PlayerCallback callback, void* pUserData)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
     lc->callback  = callback;
     lc->pUserData = pUserData;
@@ -535,9 +565,9 @@ int LayerDequeueBuffer(LayerCtrl* l, VideoPicture** ppBuf,int bInitFlag)
 {
     CDX_PLAYER_UNUSE(bInitFlag);
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     *ppBuf = NULL;
 
 	enum EPIXELFORMAT eHwPixelFormat = PIXEL_FORMAT_YV12;
@@ -581,7 +611,7 @@ int LayerDequeueBuffer(LayerCtrl* l, VideoPicture** ppBuf,int bInitFlag)
             lc->nPreNativeWindowOutputType = nCurOutputType;
         }
     }
-#endif    
+#endif
 
     if(lc->bRenderToHardwareLayer)
     {
@@ -590,13 +620,13 @@ int LayerDequeueBuffer(LayerCtrl* l, VideoPicture** ppBuf,int bInitFlag)
     else
     {
         //* dequeue a buffer from the native window object, set it to a picture buffer wrapper.
-        
+
         VideoPicture*     pPicture;
         int               i;
         int               err;
         ANativeWindowBuffer* pWindowBuf;
         void*                pDataBuf;
-        
+
         if(lc->bLayerInitialized == 0)
         {
             if(SetLayerParam(lc) != 0)
@@ -604,16 +634,16 @@ int LayerDequeueBuffer(LayerCtrl* l, VideoPicture** ppBuf,int bInitFlag)
                 loge("can not initialize layer.");
                 return -1;
             }
-            
+
             lc->bLayerInitialized = 1;
-            
+
             //* now, we no need set 3D mode
             #if 0
             if(lc->eDisplay3DMode != DISPLAY_3D_MODE_2D || lc->ePicture3DMode != PICTURE_3D_MODE_NONE)
                LayerSetDisplay3DMode(l, lc->eDisplay3DMode);
             #endif
         }
-        
+
         //* dequeue a buffer from the nativeWindow object.
         err = lc->pNativeWindow->dequeueBuffer_DEPRECATED(lc->pNativeWindow, &pWindowBuf);
         if(err != 0)
@@ -641,7 +671,7 @@ int LayerDequeueBuffer(LayerCtrl* l, VideoPicture** ppBuf,int bInitFlag)
                 break;
             }
         }
-        
+
         if(i == 32)
         {
             loge("not enough picture buffer wrapper, shouldn't run here.");
@@ -662,7 +692,7 @@ int LayerDequeueBuffer(LayerCtrl* l, VideoPicture** ppBuf,int bInitFlag)
 		}
 #else
         //* on chip-1673 and deinterlace, we should transform to phyAddr
-        if(((CONFIG_CHIP == OPTION_CHIP_1673) && CONFIG_PRODUCT == OPTION_PRODUCT_PAD) 
+        if(((CONFIG_CHIP == OPTION_CHIP_1673) && CONFIG_PRODUCT == OPTION_PRODUCT_PAD)
             || lc->bDeinterlaceFlag == 1)
         {
             uintptr_t   nPhyaddress = -1;
@@ -727,7 +757,7 @@ int LayerDequeueBuffer(LayerCtrl* l, VideoPicture** ppBuf,int bInitFlag)
             pPicture->pData1       = pPicture->pData0 + (pWindowBuf->height * pWindowBuf->stride);
             pPicture->pData2       = pPicture->pData1 + (pWindowBuf->height * pWindowBuf->stride)/4;
         }
-#endif		
+#endif
 
         *ppBuf = pPicture;
         lc->pWindowBufs[i] = pWindowBuf;
@@ -785,7 +815,7 @@ void getVideoBufferInfo(int *nBufAddr, VideoPicture* pBuf0, VideoPicture* pBuf1)
     	}
     	case PIXEL_FORMAT_YV12:
     	{
-#if(CONFIG_CHIP==OPTION_CHIP_1639)            
+#if(CONFIG_CHIP==OPTION_CHIP_1639)
             nBufAddr[6] = HAL_PIXEL_FORMAT_AW_YUV_PLANNER420;
     		temp = nBufAddr[1];
     		nBufAddr[1] = nBufAddr[2];
@@ -794,7 +824,7 @@ void getVideoBufferInfo(int *nBufAddr, VideoPicture* pBuf0, VideoPicture* pBuf1)
     		temp = nBufAddr[4];
     	    nBufAddr[4] = nBufAddr[5];
     	    nBufAddr[5] = temp;
-#elif(CONFIG_CHIP==OPTION_CHIP_1673 || CONFIG_CHIP == OPTION_CHIP_1680)            
+#elif(CONFIG_CHIP==OPTION_CHIP_1673 || CONFIG_CHIP == OPTION_CHIP_1680)
     		nBufAddr[6] = HAL_PIXEL_FORMAT_AW_YVU_PLANNER420;
 #endif
     		break;
@@ -820,7 +850,7 @@ void getVideoBufferInfo(int *nBufAddr, VideoPicture* pBuf0, VideoPicture* pBuf1)
 int LayerSetBufferTimeStamp(LayerCtrl* l, int64_t nPtsAbs)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
 
 	native_window_set_buffers_timestamp(lc->pNativeWindow, nPtsAbs);
@@ -831,8 +861,8 @@ int LayerSetBufferTimeStamp(LayerCtrl* l, int64_t nPtsAbs)
 static void updateKeepListBuffer(LayerCtrlContext* lc, buffer_handle_t handle, VideoPicture* pBuf0, VideoPicture* pBuf1)
 {
     int i = 0;
-    
-    // 
+
+    //
     for(i = 0; i < NUM_OF_PICTURES_KEEP_IN_LIST; i++)
     {
         if ((lc->pKeepPicNode[i].handle == handle)
@@ -874,7 +904,7 @@ static void updateKeepListBuffer(LayerCtrlContext* lc, buffer_handle_t handle, V
             for(i = 0; i < NUM_OF_PICTURES_KEEP_IN_LIST; i++)
             {
                 if (lc->pKeepPicNode[i].pPicture != NULL)
-                {                
+                {
                     lc->callback(lc->pUserData, MESSAGE_ID_LAYER_RETURN_BUFFER, (void*)lc->pKeepPicNode[i].pPicture);
                     if (lc->pKeepPicNode[i].pSecondPictureOf3D != NULL)
                     {
@@ -899,7 +929,7 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
     LayerCtrlContext* lc;
     int               i;
     buffer_handle_t   handle = NULL;
-    
+
     lc = (LayerCtrlContext*)l;
 
 #if (DEBUG_DUMP_PIC)
@@ -907,8 +937,8 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
     {
         FILE* fp1 = NULL;
         char path[512] = {0};
-        
-        loge("layer[%d] dump image hw(%d) size(%d * %d) , addr(%p/%p)", 
+
+        loge("layer[%d] dump image hw(%d) size(%d * %d) , addr(%p/%p)",
                     lc->picDump, lc->bRenderToHardwareLayer,  pBuf->nWidth, pBuf->nHeight,
                     pBuf->pData0, pBuf->pData1);
 
@@ -922,7 +952,7 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
     }
 #endif
 
-    
+
     if(lc->bRenderToHardwareLayer)
     {
         libhwclayerpara_t hwcLayerPictureInfo;
@@ -931,14 +961,14 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
         int                 nBufAddr[7]={0};
         VideoPicture*       pPicture;
         void*               pDataBuf;
-        
+
         if(bValid == 0)
         {
             if(pBuf != NULL)
                 lc->callback(lc->pUserData, MESSAGE_ID_LAYER_RETURN_BUFFER, (void*)pBuf);
             return 0;
         }
-        
+
         if(lc->bLayerInitialized == 0)
         {
             if(SetLayerParam(lc) != 0)
@@ -946,7 +976,7 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
                 loge("can not initialize layer.");
                 return -1;
             }
-            
+
             lc->bLayerInitialized = 1;
 
             //* now, we no need set 3D mode
@@ -955,7 +985,7 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
                LayerSetDisplay3DMode(l, lc->eDisplay3DMode);
             #endif
         }
-    
+
         if(pBuf->nWidth != lc->nWidth ||
            pBuf->nHeight != lc->nHeight ||
            pBuf->ePixelFormat != lc->eReceivePixelFormat)
@@ -963,15 +993,15 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
             //* config the display hardware again.
             //* TODO.
         }
-        
+
         //* set picture to display hardware.
 
         //* the 0 copy on A20 is different
 #if(CONFIG_CHIP != OPTION_CHIP_1639 && CONFIG_CHIP != OPTION_CHIP_1673 && CONFIG_CHIP != OPTION_CHIP_1680)
         setHwcLayerPictureInfo(&hwcLayerPictureInfo, pBuf, NULL);
-        lc->pNativeWindow->perform(lc->pNativeWindow, 
-                                   NATIVE_WINDOW_SETPARAMETER, 
-                                   HWC_LAYER_SETFRAMEPARA, 
+        lc->pNativeWindow->perform(lc->pNativeWindow,
+                                   NATIVE_WINDOW_SETPARAMETER,
+                                   HWC_LAYER_SETFRAMEPARA,
                                    (uintptr_t)(&hwcLayerPictureInfo));
         //* wait for new frame showed.
         if(lc->bLayerShowed == 1)
@@ -1053,7 +1083,7 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
 			//logd("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx send over!!");
 			lc->nOutputTypeChanged = 0;
 		}
-		
+
         //memcpy(pPicture, pBuf, sizeof(VideoPicture));
         lc->pWindowBufs[i] = pWindowBuf;
 #if(CONFIG_PRODUCT==OPTION_PRODUCT_TVBOX)
@@ -1110,7 +1140,7 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
 
         int                  err;
         ANativeWindowBuffer* pWindowBuf;
-        
+
         pWindowBuf = NULL;
         for(i=0; i<32; i++)
         {
@@ -1122,22 +1152,22 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
                 break;
             }
         }
-        
+
         if(i == 32 || pWindowBuf == NULL)
         {
             loge("enqueue an invalid buffer.");
             abort();
         }
-        
+
         //* unlock the buffer.
         {
             GraphicBufferMapper& graphicMapper = GraphicBufferMapper::get();
             graphicMapper.unlock(pWindowBuf->handle);
         }
 
-#if ((CONFIG_CHIP==OPTION_CHIP_1639 || CONFIG_CHIP==OPTION_CHIP_1673 || CONFIG_CHIP == OPTION_CHIP_1680) && (CONFIG_PRODUCT==OPTION_PRODUCT_TVBOX)) 
+#if ((CONFIG_CHIP==OPTION_CHIP_1639 || CONFIG_CHIP==OPTION_CHIP_1673 || CONFIG_CHIP == OPTION_CHIP_1680) && (CONFIG_PRODUCT==OPTION_PRODUCT_TVBOX))
          //* On A80-box, we must set comman NATIVE_WINDOW_SET_VIDEO_BUFFERS_INFO
-         //* to notify GPU that this is 'cpy to gpu', not 'o-cpy' 
+         //* to notify GPU that this is 'cpy to gpu', not 'o-cpy'
          int nBufParam[7] = {0};
          lc->pNativeWindow->perform(lc->pNativeWindow, NATIVE_WINDOW_SET_VIDEO_BUFFERS_INFO,nBufParam[0], nBufParam[1],
          nBufParam[2], nBufParam[3], nBufParam[4], nBufParam[5], nBufParam[6]);
@@ -1160,11 +1190,11 @@ int LayerQueueBuffer(LayerCtrl* l, VideoPicture* pBuf, int bValid)
 int LayerDequeue3DBuffer(LayerCtrl* l, VideoPicture** ppBuf0, VideoPicture** ppBuf1)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
     *ppBuf0 = NULL;
     *ppBuf1 = NULL;
-    
+
     if(lc->bRenderToHardwareLayer)
     {
         return LAYER_RESULT_USE_OUTSIDE_BUFFER;
@@ -1178,7 +1208,7 @@ int LayerDequeue3DBuffer(LayerCtrl* l, VideoPicture** ppBuf0, VideoPicture** ppB
                 loge("can not initialize layer.");
                 return -1;
             }
-            
+
             lc->bLayerInitialized = 1;
 
             //* now, we no need set 3D mode
@@ -1187,7 +1217,7 @@ int LayerDequeue3DBuffer(LayerCtrl* l, VideoPicture** ppBuf0, VideoPicture** ppB
                LayerSetDisplay3DMode(l, lc->eDisplay3DMode);
             #endif
         }
-        
+
         logw("can not render 3D picture(two seperated pictures) when not \
                 rendering to hardware layer.");
         return LayerDequeueBuffer(l, ppBuf0, 1);
@@ -1200,9 +1230,9 @@ int LayerQueue3DBuffer(LayerCtrl* l, VideoPicture* pBuf0, VideoPicture* pBuf1, i
     LayerCtrlContext* lc;
     int               i;
     buffer_handle_t   handle = NULL;
-    
+
     lc = (LayerCtrlContext*)l;
-    
+
     if(lc->bRenderToHardwareLayer)
     {
         libhwclayerpara_t hwcLayerPictureInfo;
@@ -1211,7 +1241,7 @@ int LayerQueue3DBuffer(LayerCtrl* l, VideoPicture* pBuf0, VideoPicture* pBuf1, i
         void*             pDataBuf;
         int               err;
         ANativeWindowBuffer* pWindowBuf;
-        
+
         if(bValid == 0)
         {
             if(pBuf0 != NULL)
@@ -1220,7 +1250,7 @@ int LayerQueue3DBuffer(LayerCtrl* l, VideoPicture* pBuf0, VideoPicture* pBuf1, i
                 lc->callback(lc->pUserData, MESSAGE_ID_LAYER_RETURN_BUFFER, (void*)pBuf1);
             return 0;
         }
-    
+
         if(lc->bLayerInitialized == 0)
         {
             if(SetLayerParam(lc) != 0)
@@ -1228,7 +1258,7 @@ int LayerQueue3DBuffer(LayerCtrl* l, VideoPicture* pBuf0, VideoPicture* pBuf1, i
                 loge("can not initialize layer.");
                 return -1;
             }
-            
+
             lc->bLayerInitialized = 1;
 
             //* now, we no need set 3D mode
@@ -1237,7 +1267,7 @@ int LayerQueue3DBuffer(LayerCtrl* l, VideoPicture* pBuf0, VideoPicture* pBuf1, i
                LayerSetDisplay3DMode(l, lc->eDisplay3DMode);
             #endif
         }
-    
+
         if(pBuf0->nWidth != lc->nWidth ||
            pBuf0->nHeight != lc->nHeight ||
            pBuf0->ePixelFormat != lc->eReceivePixelFormat)
@@ -1250,23 +1280,23 @@ int LayerQueue3DBuffer(LayerCtrl* l, VideoPicture* pBuf0, VideoPicture* pBuf1, i
 #if(CONFIG_CHIP != OPTION_CHIP_1639 && CONFIG_CHIP != OPTION_CHIP_1673 && CONFIG_CHIP != OPTION_CHIP_1680)
         //* set picture to display hardware.
         setHwcLayerPictureInfo(&hwcLayerPictureInfo, pBuf0, pBuf1);
-        lc->pNativeWindow->perform(lc->pNativeWindow, 
-                                   NATIVE_WINDOW_SETPARAMETER, 
-                                   HWC_LAYER_SETFRAMEPARA, 
+        lc->pNativeWindow->perform(lc->pNativeWindow,
+                                   NATIVE_WINDOW_SETPARAMETER,
+                                   HWC_LAYER_SETFRAMEPARA,
                                    (uintptr_t)(&hwcLayerPictureInfo));
-        
+
         //* wait for new frame showed.
         if(lc->bLayerShowed == 1)
         {
             int nCurFrameId;
             int nWaitTime;
-            
+
             nWaitTime = 50000;  //* max frame interval is 1000/24fps = 41.67ms, here we wait 50ms for max.
             do
             {
-                nCurFrameId = lc->pNativeWindow->perform(lc->pNativeWindow, 
-                                                         NATIVE_WINDOW_SETPARAMETER, 
-                                                         HWC_LAYER_GETCURFRAMEPARA, 
+                nCurFrameId = lc->pNativeWindow->perform(lc->pNativeWindow,
+                                                         NATIVE_WINDOW_SETPARAMETER,
+                                                         HWC_LAYER_GETCURFRAMEPARA,
                                                          0);
                 if(nCurFrameId == pBuf0->nID)
                     break;
@@ -1358,14 +1388,14 @@ int LayerQueue3DBuffer(LayerCtrl* l, VideoPicture* pBuf0, VideoPicture* pBuf1, i
          else
         	 lc->pNativeWindow->cancelBuffer_DEPRECATED(lc->pNativeWindow, pWindowBuf);
 #endif
-        
+
 		updateKeepListBuffer(lc, handle, pBuf0, pBuf1);
-		 
+
 		if(lc->bFirstFrameIsShowed != 1)
 		{
 			lc->bFirstFrameIsShowed = 1;
 		}
-		
+
         return 0;
     }
     else
@@ -1386,7 +1416,7 @@ static int SetLayerParam(LayerCtrlContext* lc)
     {
         int                   pixelFormat;
         android_native_rect_t crop;
-        
+
         //* close the layer first, otherwise, in case when last frame is kept showing,
         //* the picture showed will not valid because parameters changed.
         logv("Set layer param.");
@@ -1398,7 +1428,7 @@ static int SetLayerParam(LayerCtrlContext* lc)
                                        0);
 
         pixelFormat = HAL_PIXEL_FORMAT_YCrCb_420_SP;
-        
+
 #if((CONFIG_CHIP == OPTION_CHIP_1673 || CONFIG_CHIP == OPTION_CHIP_1680) && CONFIG_PRODUCT == OPTION_PRODUCT_TVBOX)
 		switch(lc->eReceivePixelFormat)
         {
@@ -1445,9 +1475,9 @@ static int SetLayerParam(LayerCtrlContext* lc)
         lc->nUsage |= GRALLOC_USAGE_SW_WRITE_OFTEN;
         lc->nUsage |= GRALLOC_USAGE_HW_TEXTURE;
         lc->nUsage |= GRALLOC_USAGE_EXTERNAL_DISP;
-        
+
         native_window_set_usage(lc->pNativeWindow,lc->nUsage);
-                                
+
         if(pixelFormat == HWC_FORMAT_YUV420PLANAR)
         {
             native_window_set_buffers_geometry(lc->pNativeWindow,
@@ -1457,21 +1487,21 @@ static int SetLayerParam(LayerCtrlContext* lc)
         }
         else
         {
-            native_window_set_scaling_mode(lc->pNativeWindow, 
+            native_window_set_scaling_mode(lc->pNativeWindow,
                                            NATIVE_WINDOW_SCALING_MODE_SCALE_TO_WINDOW);
-           
+
             native_window_set_buffers_geometry(lc->pNativeWindow,
                                                  lc->nWidth,
                                                  lc->nHeight,
                                                  pixelFormat);    //* screen id = 0.
         }
-        
+
         crop.left   = lc->nLeftOff;
         crop.right  = lc->nLeftOff + lc->nDisplayWidth;
         crop.top    = lc->nTopOff;
         crop.bottom = lc->nTopOff + lc->nDisplayHeight;
 		lc->pNativeWindow->perform(lc->pNativeWindow, NATIVE_WINDOW_SET_CROP, (uintptr_t)&crop);
-        
+
         lc->bLayerShowed = 0;
     }
     else
@@ -1480,7 +1510,7 @@ static int SetLayerParam(LayerCtrlContext* lc)
         unsigned int nGpuBufWidth;
         unsigned int nGpuBufHeight;
         Rect         crop;
-        
+
         switch(lc->eReceivePixelFormat)
         {
             case PIXEL_FORMAT_YV12:             //* why YV12 use this pixel format.
@@ -1502,31 +1532,31 @@ static int SetLayerParam(LayerCtrlContext* lc)
         lc->nUsage |= GRALLOC_USAGE_SW_WRITE_OFTEN;
         lc->nUsage |= GRALLOC_USAGE_HW_TEXTURE;
         lc->nUsage |= GRALLOC_USAGE_EXTERNAL_DISP;
-        
+
         native_window_set_usage(lc->pNativeWindow,lc->nUsage);
 
         native_window_set_scaling_mode(lc->pNativeWindow, NATIVE_WINDOW_SCALING_MODE_SCALE_TO_WINDOW);
 
         nGpuBufWidth  = (lc->nWidth + 15) & ~15;
         nGpuBufHeight = (lc->nHeight + 15) & ~15;
-        
+
         //A10's GPU has a bug, we can avoid it
         if(nGpuBufHeight%8 != 0)
         {
             logw("original picture align_width[%d], height[%d] mod8 = %d", nGpuBufWidth, nGpuBufHeight, nGpuBufHeight%8);
             if((nGpuBufWidth*nGpuBufHeight)%256 != 0)
             {
-                logw("original picture align_width[%d]*height[%d] mod 1024 = %d", 
+                logw("original picture align_width[%d]*height[%d] mod 1024 = %d",
                        nGpuBufWidth, nGpuBufHeight, (nGpuBufWidth*nGpuBufHeight)%1024);
                 nGpuBufHeight = (nGpuBufHeight+7)&~7;
                 logw("change picture height to [%d] when render to gpu", nGpuBufHeight);
             }
         }
-        
+
         nGpuBufWidth = lc->nWidth;  //* restore nGpuBufWidth to mWidth;
-    
+
         native_window_set_buffers_geometry(lc->pNativeWindow, nGpuBufWidth, nGpuBufHeight, pixelFormat);
-        
+
         crop.left   = lc->nLeftOff;
         crop.top    = lc->nTopOff;
         crop.right  = lc->nLeftOff + lc->nDisplayWidth;
@@ -1556,7 +1586,7 @@ static void setHwcLayerPictureInfo(libhwclayerpara_t* pHwcLayerPictureInfo,
                                    VideoPicture*      pSecondPictureOf3D)
 {
     memset(pHwcLayerPictureInfo, 0, sizeof(libhwclayerpara_t));
-    
+
     if(pSecondPictureOf3D == NULL)
     {
         pHwcLayerPictureInfo->number          = pPicture->nID;
@@ -1585,7 +1615,7 @@ static void setHwcLayerPictureInfo(libhwclayerpara_t* pHwcLayerPictureInfo,
         pHwcLayerPictureInfo->bottom_y        = (unsigned long)MemAdapterGetPhysicAddress(pSecondPictureOf3D->pData0);
         pHwcLayerPictureInfo->bottom_c        = (unsigned long)MemAdapterGetPhysicAddress(pSecondPictureOf3D->pData1);
     }
-    
+
     return;
 }
 
@@ -1639,7 +1669,7 @@ int LayerCtrlIsVideoShow(LayerCtrl* l)
 int LayerCtrlHoldLastPicture(LayerCtrl* l, int bHold)
 {
     LayerCtrlContext* lc;
-    
+
     lc = (LayerCtrlContext*)l;
 
     logd("LayerCtrlHoldLastPicture, bHold = %d", bHold);
@@ -1674,7 +1704,7 @@ int LayerCtrlHoldLastPicture(LayerCtrl* l, int bHold)
         		lastPicture = lc->pKeepPicNode[i].pPicture;
         	}
         }
-            
+
         if(lastPicture != NULL)
         {
             if(gLastPicture != NULL)
@@ -1685,35 +1715,35 @@ int LayerCtrlHoldLastPicture(LayerCtrl* l, int bHold)
                                                  lastPicture->nHeight,
                                                  lastPicture->nLineStride,
                                                  lastPicture->ePixelFormat);
-            logd("width = %d, height = %d, pdata0 = %p", 
+            logd("width = %d, height = %d, pdata0 = %p",
                 gLastPicture->nWidth, gLastPicture->nHeight, gLastPicture->pData0);
             if(gLastPicture != NULL)
             {
-				//* the 0 copy on A20 is different          
+				//* the 0 copy on A20 is different
                 libhwclayerpara_t hwcLayerPictureInfo;
-                
+
                 gLastPicture->nID = 0xa5a5a5a5;
                 RotatePicture(lastPicture, gLastPicture, 0, lc->nGpuYAlign, lc->nGpuCAlign);
-                
+
                 //* set picture to display hardware.
                 setHwcLayerPictureInfo(&hwcLayerPictureInfo, gLastPicture, NULL);
-                lc->pNativeWindow->perform(lc->pNativeWindow, 
-                                           NATIVE_WINDOW_SETPARAMETER, 
-                                           HWC_LAYER_SETFRAMEPARA, 
+                lc->pNativeWindow->perform(lc->pNativeWindow,
+                                           NATIVE_WINDOW_SETPARAMETER,
+                                           HWC_LAYER_SETFRAMEPARA,
                                            (unsigned int)(&hwcLayerPictureInfo));
-                                           
+
                 //* wait for new frame showed.
                 if(lc->bLayerShowed == 1)
                 {
                     int nCurFrameId;
                     int nWaitTime;
-                    
+
                     nWaitTime = 50000;  //* max frame interval is 1000/24fps = 41.67ms, here we wait 50ms for max.
                     do
                     {
-                        nCurFrameId = lc->pNativeWindow->perform(lc->pNativeWindow, 
-                                                                 NATIVE_WINDOW_SETPARAMETER, 
-                                                                 HWC_LAYER_GETCURFRAMEPARA, 
+                        nCurFrameId = lc->pNativeWindow->perform(lc->pNativeWindow,
+                                                                 NATIVE_WINDOW_SETPARAMETER,
+                                                                 HWC_LAYER_GETCURFRAMEPARA,
                                                                  0);
                         if(nCurFrameId == gLastPicture->nID)
                             break;
@@ -1754,10 +1784,10 @@ int LayerCtrlHoldLastPicture(LayerCtrl* l, int bHold)
                 loge("the nGpuYAlign[%d] is not surpport!",lc->nGpuYAlign);
                 return -1;
             }
-            
+
 			RotatePicture(lastPicture, gLastPicture, 0, lc->nGpuYAlign, lc->nGpuCAlign);
-            
-            logd("width = %d, height = %d, pdata0 = %p", 
+
+            logd("width = %d, height = %d, pdata0 = %p",
                 gLastPicture->nWidth, gLastPicture->nHeight, gLastPicture->pData0);
             if(gLastPicture != NULL)
             {
@@ -1874,24 +1904,24 @@ int LayerCtrlHoldLastPicture(LayerCtrl* l, int bHold)
 	            	lc->pNativeWindow->queueBuffer_DEPRECATED(lc->pNativeWindow, pWindowBuf);
 				}
             }
-#endif			
+#endif
         }
     }
-#endif    
+#endif
     return 0;
 }
 
 static int SendThreeBlackFrameToGpu(LayerCtrlContext* lc)
 {
     logd("SendThreeBlackFrameToGpu()");
-    
+
     ANativeWindowBuffer* pWindowBuf;
     void*                pDataBuf;
     int                  i;
     int                  err;
 
-    //* it just work on A80-box and H8         
-#if((CONFIG_CHIP==OPTION_CHIP_1639 || CONFIG_CHIP==OPTION_CHIP_1673 || CONFIG_CHIP == OPTION_CHIP_1680) && (CONFIG_PRODUCT==OPTION_PRODUCT_TVBOX))    
+    //* it just work on A80-box and H8
+#if((CONFIG_CHIP==OPTION_CHIP_1639 || CONFIG_CHIP==OPTION_CHIP_1673 || CONFIG_CHIP == OPTION_CHIP_1680) && (CONFIG_PRODUCT==OPTION_PRODUCT_TVBOX))
     for(i = 0;i < NUM_OF_PICTURES_KEEP_IN_LIST;i++)
     {
         err = lc->pNativeWindow->dequeueBuffer_DEPRECATED(lc->pNativeWindow, &pWindowBuf);
@@ -1911,19 +1941,19 @@ static int SendThreeBlackFrameToGpu(LayerCtrlContext* lc)
 
         memset((char*)pDataBuf,0x10,(pWindowBuf->height * pWindowBuf->stride));
         memset((char*)pDataBuf + pWindowBuf->height * pWindowBuf->stride,0x80,(pWindowBuf->height * pWindowBuf->stride)/2);
-        
+
         int nBufAddr[7] = {0};
         //nBufAddr[6] = HAL_PIXEL_FORMAT_AW_NV12;
         nBufAddr[6] = HAL_PIXEL_FORMAT_AW_FORCE_GPU;
         lc->pNativeWindow->perform(lc->pNativeWindow, NATIVE_WINDOW_SET_VIDEO_BUFFERS_INFO,	nBufAddr[0], nBufAddr[1],
         nBufAddr[2], nBufAddr[3], nBufAddr[4], nBufAddr[5], nBufAddr[6]);
-        
+
         //* unlock the buffer.
         {
             GraphicBufferMapper& graphicMapper = GraphicBufferMapper::get();
             graphicMapper.unlock(pWindowBuf->handle);
         }
-        
+
         lc->pNativeWindow->queueBuffer_DEPRECATED(lc->pNativeWindow, pWindowBuf);
     }
 #else
@@ -2023,7 +2053,7 @@ int LayerGetDisplayFPS(LayerCtrl* l)
     return -1;
 }
 
-LayerControlOpsT mLayerControlOps = 
+LayerControlOpsT mLayerControlOps =
 {
     LayerInit:                       LayerInit                      ,
     LayerRelease:                    LayerRelease                   ,
@@ -2049,11 +2079,11 @@ LayerControlOpsT mLayerControlOps =
     LayerGetRotationAngle:           LayerGetRotationAngle          ,
     LayerSetCallback:                LayerSetCallback               ,
     LayerSetBufferCount:             LayerSetBufferCount            ,
-    LayerSetVideoWithTwoStreamFlag:  LayerSetVideoWithTwoStreamFlag ,        
+    LayerSetVideoWithTwoStreamFlag:  LayerSetVideoWithTwoStreamFlag ,
     LayerSetIsSoftDecoderFlag:       LayerSetIsSoftDecoderFlag      ,
     LayerResetNativeWindow:          LayerResetNativeWindow         ,
     LayerReleaseBuffer:              LayerReleaseBuffer             ,
     LayerGetPicNode:                 LayerGetPicNode                ,
     LayerGetAddedPicturesCount:      LayerGetAddedPicturesCount     ,
-    LayerGetDisplayFPS:              LayerGetDisplayFPS             
+    LayerGetDisplayFPS:              LayerGetDisplayFPS
 };
