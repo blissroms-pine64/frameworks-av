@@ -45,7 +45,7 @@
 
 namespace android {
 
-#define MAKE_AW_PLAYER_VALID (1)
+#define MAKE_AW_PLAYER_VALID (0)
 
 Mutex MediaPlayerFactory::sLock;
 MediaPlayerFactory::tFactoryMap MediaPlayerFactory::sFactoryMap;
@@ -68,7 +68,7 @@ extmap FILE_EXTS [] =  {
 		{".out",  AW_PLAYER},
 		//{".3gp",  STAGEFRIGHT_PLAYER},
         //{".aac",  STAGEFRIGHT_PLAYER},
-            
+
         {".mid",  NU_PLAYER},
         {".midi", NU_PLAYER},
         {".smf",  NU_PLAYER},
@@ -78,7 +78,7 @@ extmap FILE_EXTS [] =  {
         {".rtttl",NU_PLAYER},
         {".rtx",  NU_PLAYER},
         {".ota",  NU_PLAYER},
-            
+
         {".ape", AW_PLAYER},
         {".ac3", AW_PLAYER},
         {".dts", AW_PLAYER},
@@ -229,7 +229,7 @@ player_type getPlayerType_l(const char* url)
             }
         }
     }
-    
+
     return AW_PLAYER;
 }
 
