@@ -1271,9 +1271,7 @@ static void extractAlbumArt(
     }
 
     descLen = U32_AT(&flac[8 + typeLen]);
-    if (flacSize < 32 ||
-        flacSize - 32 < typeLen ||
-        flacSize - 32 - typeLen < descLen) {
+    if (flacSize - 32 - typeLen < descLen) {
         return;
     }
 

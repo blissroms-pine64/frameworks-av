@@ -165,7 +165,7 @@ private:
         kFlagIsSecure                                 = 1,
         kFlagPushBlankBuffersToNativeWindowOnShutdown = 2,
         kFlagIsGrallocUsageProtected                  = 4,
-		kFlagIsDRM									  = 0x10000,
+        kFlagIsDRM                                    = 0x10000,
     };
 
     enum {

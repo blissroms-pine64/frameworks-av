@@ -588,15 +588,6 @@ status_t AudioTrack::start()
         mProxy->clearTimestamp(); // need new server push for valid timestamp
         mMarkerReached = false;
 
-        // If previousState == STATE_STOPPED, we reactivate markers (mMarkerPosition != 0)
-        // as the position is reset to 0. This is legacy behavior. This is not done
-        // in stop() to avoid a race condition where the last marker event is issued twice.
-        // Note: the if is technically unnecessary because previousState == STATE_FLUSHED
-        // is only for streaming tracks, and mMarkerReached is already set to false.
-        if (previousState == STATE_STOPPED) {
-            mMarkerReached = false;
-        }
-
         // For offloaded tracks, we don't know if the hardware counters are really zero here,
         // since the flush is asynchronous and stop may not fully drain.
         // We save the time when the track is started to later verify whether

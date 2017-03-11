@@ -300,16 +300,6 @@ MediaPlayerService::MediaPlayerService()
     BatteryNotifier::getInstance().noteResetVideo();
 
     MediaPlayerFactory::registerBuiltinFactories();
-	/*add by aw. start*/
-	char wfd_value[PROPERTY_VALUE_MAX];
-	if (property_get("persist.service.wfd.enable", wfd_value, "0") &&
-			(!strcmp(wfd_value, "1") || !strcasecmp(wfd_value, "true"))) {
-		if(property_set("persist.service.wfd.enable", "0")) {
-			ALOGD("set property persist.service.wfd.enable failed!");
-		}
-	}
-	ALOGD("wfd_value: %s",wfd_value);
-	/*add by aw. end*/
 }
 
 MediaPlayerService::~MediaPlayerService()

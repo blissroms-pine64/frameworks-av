@@ -372,6 +372,17 @@ status_t SurfaceMediaSource::read(
     return OK;
 }
 
+#define USE_kMetadataBufferTypeANWBuffer
+#ifdef USE_kMetadataBufferTypeANWBuffer
+ANativeWindowBuffer* getMediaBufferHandle_l(MediaBuffer *buffer) {
+    VideoNativeMetadata *data = (VideoNativeMetadata *)buffer->data();
+    if (data == NULL) {
+        ALOGE("metadata buffer is NULL!");
+        return NULL;
+    }
+    return data->pBuffer;
+}
+#else
 static buffer_handle_t getMediaBufferHandle(MediaBuffer *buffer) {
     // need to convert to char* for pointer arithmetic and then
     // copy the byte stream into our handle
@@ -379,6 +390,7 @@ static buffer_handle_t getMediaBufferHandle(MediaBuffer *buffer) {
     memcpy(&bufferHandle, (char*)(buffer->data()) + 4, sizeof(buffer_handle_t));
     return bufferHandle;
 }
+#endif
 
 void SurfaceMediaSource::signalBufferReturned(MediaBuffer *buffer) {
     ALOGV("signalBufferReturned");
@@ -387,10 +399,19 @@ void SurfaceMediaSource::signalBufferReturned(MediaBuffer *buffer) {
 
     Mutex::Autolock lock(mMutex);
 
+#ifdef  USE_kMetadataBufferTypeANWBuffer
+    ANativeWindowBuffer* bufferHandle = getMediaBufferHandle_l(buffer);
+#else
     buffer_handle_t bufferHandle = getMediaBufferHandle(buffer);
+#endif
 
     for (size_t i = 0; i < mCurrentBuffers.size(); i++) {
-        if (mCurrentBuffers[i]->handle == bufferHandle) {
+#ifdef USE_kMetadataBufferTypeANWBuffer
+        if (mCurrentBuffers[i]->getNativeBuffer() == bufferHandle)
+#else
+        if (mCurrentBuffers[i]->handle == bufferHandle)
+#endif
+           {
             mCurrentBuffers.removeAt(i);
             foundBuffer = true;
             break;
@@ -406,7 +427,11 @@ void SurfaceMediaSource::signalBufferReturned(MediaBuffer *buffer) {
             continue;
         }
 
+#ifdef USE_kMetadataBufferTypeANWBuffer
+        if (bufferHandle == mSlots[id].mGraphicBuffer->getNativeBuffer()) {
+#else
         if (bufferHandle == mSlots[id].mGraphicBuffer->handle) {
+#endif
             ALOGV("Slot %d returned, matches handle = %p", id,
                     mSlots[id].mGraphicBuffer->handle);
 

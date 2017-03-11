@@ -29,7 +29,6 @@
 #include <media/MediaPlayerInterface.h>
 #include <media/Metadata.h>
 #include <media/stagefright/foundation/ABase.h>
-#include <media/ICrypto.h>
 
 #include <system/audio.h>
 
@@ -506,7 +505,7 @@ private:
                 SortedVector< wp<MediaRecorderClient> > mMediaRecorderClients;
                 int32_t                     mNextConnId;
                 sp<IOMX>                    mOMX;
-                sp<ICrypto>                 mCrypto;
+
                 /* add by Gary. start {{----------------------------------- */
                 /* 2011-11-14 */
                 /* support adjusting colors while playing video */

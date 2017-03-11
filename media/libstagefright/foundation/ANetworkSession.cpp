@@ -27,7 +27,6 @@
 #include <net/if.h>
 #include <netdb.h>
 #include <netinet/in.h>
-
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 
@@ -35,9 +34,9 @@
 #include <media/stagefright/foundation/ADebug.h>
 #include <media/stagefright/foundation/AMessage.h>
 #include <media/stagefright/foundation/hexdump.h>
-
 #include <cutils/properties.h>
 #include <netinet/ip.h>
+
 namespace android {
 
 #define SW_DYNAMIC_ENCODE_BITRATE 1
@@ -1544,30 +1543,6 @@ void ANetworkSession::threadLoop() {
                                   ntohs(remoteAddr.sin_port),
                                   clientSocket);
 
-                            /*
-                              802.1p Class of Service     TOS Range               DSCP Range          WME Category
-                              0 - Best Effort             0x00-0x1f               0-7                 Best Effort
-                              1 - Background              0x20-0x3f               8-15                Background
-                              2 - Spare                   0x40-0x5f               16-23               Background
-                              3 - Excellent Effort        0x60-0x7f               24-25, 28-31        Best Effort
-                              4 - Controlled Load         0x80-0x9f               32-39               Video
-                              5 - Video (<100ms latency)  0xa0-0xbf               40-45               Video
-                              6 - Voice (<10ms latency)   0x68,0xb8,0xc0-0xdf     26-27,46-47,48-55   Voice
-                              7 - Network Control         0xe0-0xff               56-63               Voice
-                            */
-                            
-							/*
-                            #ifndef BOARD_BRCM_WLAN
-                            uint8_t serviceType =  0xb8;//tcp,voice
-                            res = setsockopt(clientSocket, SOL_IP, IP_TOS, (void *)&serviceType, sizeof(serviceType));
-                            if(res < 0) {
-                                ALOGD("setsockopt(IP_TOS) failed!");
-                            } else {
-                                ALOGD("tcp set QoS.");
-                            }
-                            #endif
-							*/
-							
                             sp<Session> clientSession =
                                 new Session(
                                         mNextSessionID++,

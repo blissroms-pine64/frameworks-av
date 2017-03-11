@@ -20,7 +20,6 @@
 #include <binder/Parcel.h>
 
 #include <media/IMediaPlayerClient.h>
-#include <media/mediaplayer.h>
 
 namespace android {
 
@@ -46,11 +45,19 @@ public:
         if (obj && obj->dataSize() > 0) {
             data.appendFrom(const_cast<Parcel *>(obj), 0, obj->dataSize());
         }
-
-        if (replyObj!=NULL)
-          remote()->transact(NOTIFY, data, replyObj);
+		if (replyObj!=NULL)
+        {
+            remote()->transact(NOTIFY, data, replyObj);
+            //ALOGD("(f:%s, l:%d) parcel pos[%d], dataSize[%d]", __FUNCTION__, __LINE__, reply.dataPosition(), reply.dataSize());
+            //if(reply.dataSize() > 0)
+            //{
+            //    replyObj->appendFrom(const_cast<Parcel *>(&reply), 0, reply.dataSize());
+            //}
+        }
         else
-          remote()->transact(NOTIFY, data, &reply, IBinder::FLAG_ONEWAY);
+        {
+            remote()->transact(NOTIFY, data, &reply, IBinder::FLAG_ONEWAY);
+        }
     }
 };
 

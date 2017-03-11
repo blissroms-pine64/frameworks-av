@@ -32,8 +32,6 @@
 #include <gui/IGraphicBufferProducer.h>
 #include <utils/String8.h>
 
-
-
 namespace android {
 
 enum {
