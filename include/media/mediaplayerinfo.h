@@ -134,6 +134,13 @@ typedef struct _MediaPlayer_TrackInfo{
 #define AUDIO_CHANNEL_MUTE_ALL                 3
 /* add by Gary. end   -----------------------------------}} */
 
+/* add by Gary. start {{----------------------------------- */
+/* 2013-3-16 */
+/* control the raw data mode */
+#define AUDIO_DATA_MODE_PCM                    1
+#define AUDIO_DATA_MODE_HDMI_RAW               2
+#define AUDIO_DATA_MODE_SPDIF_RAW              3
+/* add by Gary. end   -----------------------------------}} */
 
 /* add by Gary. start {{----------------------------------- */
 /* 2012-4-24 */

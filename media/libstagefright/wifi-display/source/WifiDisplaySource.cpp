@@ -375,7 +375,7 @@ void WifiDisplaySource::onMessageReceived(const sp<AMessage> &msg) {
             }
 
             if (mClientInfo.mPlaybackSession->getLastLifesignUs()
-                    + kPlaybackSessionTimeoutUs < ALooper::GetNowUs()) {
+                    + kPlaybackSessionTimeoutUs*3 < ALooper::GetNowUs()) {
                 ALOGI("playback session timed out, reaping.");
 
                 mNetSession->destroySession(mClientSessionID);
@@ -443,7 +443,7 @@ void WifiDisplaySource::onMessageReceived(const sp<AMessage> &msg) {
                 if (0 != property_set("persist.service.wfd.enable", "1")) {
                     ALOGE("DisplayConnected set persist.service.wfd.enable property fail.");
                 }
-                
+
                 ALOGD("DisplayConnected set persist.service.wfd.enable property to 1.");
 
                 if (mState == ABOUT_TO_PLAY) {

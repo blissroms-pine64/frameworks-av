@@ -50,7 +50,7 @@ Gains::sExtMediaSystemVolumeCurve[Volume::VOLCNT] = {
 
 const VolumeCurvePoint
 Gains::sSpeakerMediaVolumeCurve[Volume::VOLCNT] = {
-    {1, -56.0f}, {20, -34.0f}, {60, -11.0f}, {100, 0.0f}
+    {1, -24.0f}, {33, -16.0f}, {66, -8.0f}, {100, 0.0f}
 };
 
 const VolumeCurvePoint

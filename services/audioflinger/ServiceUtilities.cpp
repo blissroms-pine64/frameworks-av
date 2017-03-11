@@ -67,6 +67,8 @@ bool recordingAllowed(const String16& opPackageName, pid_t pid, uid_t uid) {
     if (uid == AID_ROOT) return true;
 
     String16 checkedOpPackageName = opPackageName;
+    if (uid == AID_MEDIA)
+        checkedOpPackageName = String16("media");
 
     // In some cases the calling code has no access to the package it runs under.
     // For example, code using the wilhelm framework's OpenSL-ES APIs. In this

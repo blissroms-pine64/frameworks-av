@@ -22,6 +22,8 @@
 
 #include <gui/Surface.h>
 
+#include <OMX_IVCommon.h>
+
 namespace android {
 
 status_t setNativeWindowSizeFormatAndUsage(
@@ -50,7 +52,15 @@ status_t setNativeWindowSizeFormatAndUsage(
         return err;
     }
 
-    err = native_window_set_buffers_format(nativeWindow, format);
+    if(format == OMX_COLOR_FormatYUV420Planar)
+    {
+        err = native_window_set_buffers_format(nativeWindow, HAL_PIXEL_FORMAT_YV12);
+    }
+    else
+    {
+        err = native_window_set_buffers_format(nativeWindow, format);
+    }
+
     if (err != NO_ERROR) {
         ALOGE("native_window_set_buffers_format failed: %s (%d)", strerror(-err), -err);
         return err;

@@ -821,7 +821,8 @@ void MediaFilter::onSignalEndOfInputStream() {
 }
 
 status_t MediaFilter::setEncoderBitrate(int32_t bitrate __unused) {
-	return OK;
+    return OK;
 }
+
 
 }   // namespace android

@@ -1286,7 +1286,16 @@ status_t OMXNodeInstance::allocateBufferWithBackup(
     }
 
     // metadata buffers are not connected cross process; only copy if not meta
-    bool copy = mMetadataType[portIndex] == kMetadataBufferTypeInvalid;
+	bool copy = false;
+	if((mMetadataType[portIndex] == kMetadataBufferTypeCameraSource) &&
+		!strcmp(mName, "allwinner.encoder.avc"))
+	{
+		copy = true;
+	}
+	else
+	{
+		copy = mMetadataType[portIndex] == kMetadataBufferTypeInvalid;
+	}
 
     BufferMeta *buffer_meta = new BufferMeta(
             params, portIndex,

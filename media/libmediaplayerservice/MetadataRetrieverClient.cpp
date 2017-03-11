@@ -93,8 +93,10 @@ static sp<MediaMetadataRetrieverBase> createRetriever(player_type playerType)
             break;
         }
         case AW_PLAYER:
+        {
             p = new AwMetadataRetriever;
             break;
+        }
         default:
             // TODO:
             // support for TEST_PLAYER
@@ -196,33 +198,10 @@ status_t MetadataRetrieverClient::setDataSource(
 }
 
 Mutex MetadataRetrieverClient::sLock;
-sp<IMemory> MetadataRetrieverClient::getStreamAtTime(int64_t timeUs)
-{
-	status_t ret;
-	int      nStreamSize;
 
-    Mutex::Autolock lock(mLock);
-
-    mThumbnail.clear();
-    if (mRetriever == NULL)
-    {
-        ALOGE("retriever is not initialized");
-        return NULL;
-    }
-
-    mThumbnail = mRetriever->getStreamAtTime(timeUs);
-    if (mThumbnail == NULL)
-    {
-        ALOGE("failed to capture video stream.");
-    }
-
-    return mThumbnail;
-}
 sp<IMemory> MetadataRetrieverClient::getFrameAtTime(int64_t timeUs, int option)
 {
-    if(option != 0x3)
-    {
-    ALOGV("getFrameAtTime: time(%lld us) option(%d)", timeUs, option);
+    ALOGV("getFrameAtTime: time(%lld us) option(%d)", (long long)timeUs, option);
     Mutex::Autolock lock(mLock);
     Mutex::Autolock glock(sLock);
     mThumbnail.clear();
@@ -261,12 +240,6 @@ sp<IMemory> MetadataRetrieverClient::getFrameAtTime(int64_t timeUs, int option)
     frameCopy->mData = 0;
     delete frame;  // Fix memory leakage
     return mThumbnail;
-    }
-    else
-    {
-
-    	return getStreamAtTime(timeUs);
-    }
 }
 
 sp<IMemory> MetadataRetrieverClient::extractAlbumArt()

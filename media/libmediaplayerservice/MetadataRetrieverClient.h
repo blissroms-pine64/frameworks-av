@@ -51,7 +51,6 @@ public:
     virtual status_t                setDataSource(int fd, int64_t offset, int64_t length);
     virtual status_t                setDataSource(const sp<IDataSource>& source);
     virtual sp<IMemory>             getFrameAtTime(int64_t timeUs, int option);
-    virtual sp<IMemory>             getStreamAtTime(int64_t timeUs);
     virtual sp<IMemory>             extractAlbumArt();
     virtual const char*             extractMetadata(int keyCode);
 

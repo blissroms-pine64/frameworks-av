@@ -42,7 +42,6 @@ class IResourceManagerService;
 struct PersistentSurface;
 struct SoftwareRenderer;
 struct Surface;
-class HDMIListerner;
 
 struct MediaCodec : public AHandler {
     enum ConfigureFlags {
@@ -349,14 +348,6 @@ private:
     bool mHaveInputSurface;
     bool mHavePendingInputBuffers;
 
-    //add by aw. start
-    bool mIsAudioTrack;
-    bool mIsDRMMedia;
-    bool mHDMIPlugged;
-	bool mMuteDRMWhenHDMI;
-    HDMIListerner * mHDMIListener;
-    //add by aw. end
-
     MediaCodec(const sp<ALooper> &looper, pid_t pid);
 
     static sp<CodecBase> GetCodecBase(const AString &name, bool nameIsType = false);
@@ -409,11 +400,6 @@ private:
 
     bool hasPendingBuffer(int portIndex);
     bool hasPendingBuffer();
-
-	//add by aw. start
-    void 	 setHDMIState(bool state);
-    static void HDMINotify(void* cookie, bool state);
-    //add by aw. end
 
     /* called to get the last codec error when the sticky flag is set.
      * if no such codec error is found, returns UNKNOWN_ERROR.

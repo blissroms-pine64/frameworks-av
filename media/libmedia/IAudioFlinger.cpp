@@ -83,7 +83,6 @@ enum {
     GET_AUDIO_HW_SYNC,
     SYSTEM_READY,
     FRAME_COUNT_HAL,
-	SET_STREAM_MUTE_NO_PERMISSION
 };
 
 #define MAX_ITEMS_PER_LIST 1024
@@ -919,7 +918,6 @@ public:
         data.writeInterfaceToken(IAudioFlinger::getInterfaceDescriptor());
         return remote()->transact(SYSTEM_READY, data, &reply, IBinder::FLAG_ONEWAY);
     }
-
     virtual size_t frameCountHAL(audio_io_handle_t ioHandle) const
     {
         Parcel data, reply;
@@ -932,15 +930,6 @@ public:
         return reply.readInt64();
     }
 
-	virtual status_t setStreamMuteNoPermission(audio_stream_type_t stream, bool muted)
-    {
-        Parcel data, reply;
-        data.writeInterfaceToken(IAudioFlinger::getInterfaceDescriptor());
-        data.writeInt32((int32_t) stream);
-        data.writeInt32(muted);
-        remote()->transact(SET_STREAM_MUTE_NO_PERMISSION, data, &reply);
-        return reply.readInt32();
-    }
 };
 
 IMPLEMENT_META_INTERFACE(AudioFlinger, "android.media.IAudioFlinger");
@@ -1458,12 +1447,6 @@ status_t BnAudioFlinger::onTransact(
         case FRAME_COUNT_HAL: {
             CHECK_INTERFACE(IAudioFlinger, data, reply);
             reply->writeInt64( frameCountHAL((audio_io_handle_t) data.readInt32()) );
-            return NO_ERROR;
-          } break;
-		case SET_STREAM_MUTE_NO_PERMISSION: {
-            CHECK_INTERFACE(IAudioFlinger, data, reply);
-            int stream = data.readInt32();
-            reply->writeInt32( setStreamMuteNoPermission((audio_stream_type_t) stream, data.readInt32()) );
             return NO_ERROR;
         } break;
         default:
