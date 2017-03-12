@@ -9,7 +9,11 @@ os_version = $(shell echo $(PLATFORM_VERSION) | cut -c 1-3)
 ifeq ($(os_version), 7.0)
 LOCAL_CFLAGS +=
 else
+ifeq ($(os_version), 7.1)
+LOCAL_CFLAGS +=
+else
 LOCAL_CFLAGS += -DCONF_ARMV7_A_NEON
+endif
 endif
 endif
 

@@ -25,7 +25,9 @@ ifneq ($(CONF_ANDROID_VERSION),5.0)
 ifneq ($(CONF_ANDROID_VERSION),5.1)
 ifneq ($(CONF_ANDROID_VERSION),6.0)
 ifneq ($(CONF_ANDROID_VERSION),7.0)
+ifneq ($(CONF_ANDROID_VERSION),7.1)
 LOCAL_SHARED_LIBRARIES += libcorkscrew
+endif
 endif
 endif
 endif
