@@ -6,6 +6,7 @@ include $(CEDARX_ROOT)/config.mk
 
 CONF_ANDROID_VERSION = $(shell echo $(PLATFORM_VERSION) | cut -c 1-3)
 ifneq ($(CONF_ANDROID_VERSION), 7.0)
+ifneq ($(CONF_ANDROID_VERSION), 7.1)
 
 LOCAL_SRC_FILES:= \
 	Extractor.cpp \
@@ -53,4 +54,5 @@ endif
 
 include $(BUILD_SHARED_LIBRARY)
 
+endif
 endif

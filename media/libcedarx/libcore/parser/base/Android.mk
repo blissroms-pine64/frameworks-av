@@ -28,7 +28,9 @@ LOCAL_SHARED_LIBRARIES = libcdx_stream libcdx_base
 
 ## CONF_ANDROID_VERSION is set in libcedarx/config.mk
 ifneq ($(CONF_ANDROID_VERSION), 7.0)
+ifneq ($(CONF_ANDROID_VERSION), 7.1)
 LOCAL_SHARED_LIBRARIES += libaw_wvm
+endif
 endif
 
 LOCAL_SHARED_LIBRARIES += libicuuc libutils libcutils libz libdl libssl libcrypto libcdx_common

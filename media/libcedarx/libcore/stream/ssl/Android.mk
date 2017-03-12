@@ -21,6 +21,9 @@ LOCAL_C_INCLUDES += \
 else ifeq ($(CONF_ANDROID_VERSION), 7.0)
 LOCAL_C_INCLUDES += \
 	$(TOP)/external/boringssl/src/include
+else ifeq ($(CONF_ANDROID_VERSION), 7.1)
+LOCAL_C_INCLUDES += \
+	$(TOP)/external/boringssl/src/include
 else
 LOCAL_C_INCLUDES += \
 	$(TOP)/external/openssl/include
