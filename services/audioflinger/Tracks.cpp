@@ -110,9 +110,24 @@ AudioFlinger::ThreadBase::TrackBase::TrackBase(
     mUid = clientUid;
 
     // ALOGD("Creating track with %d buffers @ %d bytes", bufferCount, bufferSize);
+
+    size_t bufferSize = buffer == NULL ? roundup(frameCount) : frameCount;
+    // check overflow when computing bufferSize due to multiplication by mFrameSize.
+    if (bufferSize < frameCount  // roundup rounds down for values above UINT_MAX / 2
+            || mFrameSize == 0   // format needs to be correct
+            || bufferSize > SIZE_MAX / mFrameSize) {
+        android_errorWriteLog(0x534e4554, "34749571");
+        return;
+    }
+    bufferSize *= mFrameSize;
+
     size_t size = sizeof(audio_track_cblk_t);
-    size_t bufferSize = (buffer == NULL ? roundup(frameCount) : frameCount) * mFrameSize;
     if (buffer == NULL && alloc == ALLOC_CBLK) {
+        // check overflow when computing allocation size for streaming tracks.
+        if (size > SIZE_MAX - bufferSize) {
+            android_errorWriteLog(0x534e4554, "34749571");
+            return;
+        }
         size += bufferSize;
     }
 
@@ -388,7 +403,7 @@ AudioFlinger::PlaybackThread::Track::Track(
     }
     mServerProxy = mAudioTrackServerProxy;
 
-    mName = thread->getTrackName_l(channelMask, format, sessionId);
+    mName = thread->getTrackName_l(channelMask, format, sessionId, uid);
     if (mName < 0) {
         ALOGE("no more track names available");
         return;
@@ -777,6 +792,13 @@ void AudioFlinger::PlaybackThread::Track::flush()
         Mutex::Autolock _l(thread->mLock);
         PlaybackThread *playbackThread = (PlaybackThread *)thread.get();
 
+        // Flush the ring buffer now if the track is not active in the PlaybackThread.
+        // Otherwise the flush would not be done until the track is resumed.
+        // Requires FastTrack removal be BLOCK_UNTIL_ACKED
+        if (playbackThread->mActiveTracks.indexOf(this) < 0) {
+            (void)mServerProxy->flushBufferIfNeeded();
+        }
+
         if (isOffloaded()) {
             // If offloaded we allow flush during any state except terminated
             // and keep the track active to avoid problems if user is seeking
@@ -827,6 +849,10 @@ void AudioFlinger::PlaybackThread::Track::flushAck()
 {
     if (!isOffloaded() && !isDirect())
         return;
+
+    // Clear the client ring buffer so that the app can prime the buffer while paused.
+    // Otherwise it might not get cleared until playback is resumed and obtainBuffer() is called.
+    mServerProxy->flushBufferIfNeeded();
 
     mFlushHwPending = false;
 }
