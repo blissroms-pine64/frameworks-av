@@ -805,6 +805,13 @@ status_t OMXNodeInstance::useBuffer(
         }
         memset(data, 0, allottedSize);
 
+        // if we are not connecting the buffers, the sizes must match
+        if (allottedSize != params->size()) {
+            CLOG_ERROR(useBuffer, BAD_VALUE, SIMPLE_BUFFER(portIndex, (size_t)allottedSize, data));
+            delete[] data;
+            return BAD_VALUE;
+        }
+
         buffer_meta = new BufferMeta(
                 params, portIndex, false /* copyToOmx */, false /* copyFromOmx */, data);
     } else {
@@ -1279,7 +1286,16 @@ status_t OMXNodeInstance::allocateBufferWithBackup(
     }
 
     // metadata buffers are not connected cross process; only copy if not meta
-    bool copy = mMetadataType[portIndex] == kMetadataBufferTypeInvalid;
+	bool copy = false;
+	if((mMetadataType[portIndex] == kMetadataBufferTypeCameraSource) &&
+		!strcmp(mName, "allwinner.encoder.avc"))
+	{
+		copy = true;
+	}
+	else
+	{
+		copy = mMetadataType[portIndex] == kMetadataBufferTypeInvalid;
+	}
 
     BufferMeta *buffer_meta = new BufferMeta(
             params, portIndex,

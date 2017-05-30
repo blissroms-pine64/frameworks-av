@@ -5,6 +5,7 @@ LOCAL_PATH:= $(call my-dir)
 #
 
 include $(CLEAR_VARS)
+include $(LOCAL_PATH)/../libcedarx/config.mk
 
 LOCAL_SRC_FILES:=               \
     ActivityManager.cpp         \
@@ -16,6 +17,7 @@ LOCAL_SRC_FILES:=               \
     RemoteDisplay.cpp           \
     StagefrightRecorder.cpp     \
     TestPlayerStub.cpp          \
+    SimpleMediaFormatProbe.cpp
 
 LOCAL_SHARED_LIBRARIES :=       \
     libbinder                   \
@@ -35,6 +37,14 @@ LOCAL_SHARED_LIBRARIES :=       \
     libstagefright_omx          \
     libstagefright_wfd          \
     libutils                    \
+<<<<<<< HEAD
+=======
+    libvorbisidec               \
+    libawplayer                 \
+    libxplayer                  \
+    libaw_output                \
+    libawmetadataretriever      \
+>>>>>>> ec6bd96... All changes from nougat-7.1 based on android-7.1.2_r11
 
 LOCAL_STATIC_LIBRARIES :=       \
     libstagefright_nuplayer     \
@@ -53,6 +63,11 @@ LOCAL_C_INCLUDES :=                                                 \
     $(TOP)/frameworks/native/include/media/openmax                  \
     $(TOP)/frameworks/native/include/media/hardware                 \
     $(TOP)/external/tremolo/Tremolo                                 \
+    libcore/include                                                 \
+    $(TOP)/frameworks/av/media/libcedarx/android_adapter/awplayer/   \
+    $(TOP)/frameworks/av/media/libcedarx/android_adapter/output/   \
+    $(TOP)/frameworks/av/media/libcedarx/android_adapter/metadataretriever/       \
+    $(TOP)/frameworks/av/media/libcedarc/include  \
 
 LOCAL_CFLAGS += -Werror -Wno-error=deprecated-declarations -Wall
 

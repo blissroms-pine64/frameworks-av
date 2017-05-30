@@ -58,7 +58,7 @@
 namespace android {
 
 enum {
-    kMaxIndicesToCheck = 32, // used when enumerating supported formats and profiles
+    kMaxIndicesToCheck = 64, // used when enumerating supported formats and profiles
 };
 
 // OMX errors are directly mapped into status_t range if
@@ -974,7 +974,8 @@ status_t ACodec::setupNativeWindowSizeFormatAndUsage(
     }
     int omxUsage = usage;
 
-    if (mFlags & kFlagIsGrallocUsageProtected) {
+    if (mFlags & (kFlagIsGrallocUsageProtected | kFlagIsDRM)) {
+	ALOGD("It's native protected video");
         usage |= GRALLOC_USAGE_PROTECTED;
     }
 
@@ -3125,6 +3126,18 @@ static const struct VideoCodingMapEntry {
     { MEDIA_MIMETYPE_VIDEO_VP8, OMX_VIDEO_CodingVP8 },
     { MEDIA_MIMETYPE_VIDEO_VP9, OMX_VIDEO_CodingVP9 },
     { MEDIA_MIMETYPE_VIDEO_DOLBY_VISION, OMX_VIDEO_CodingDolbyVision },
+    { MEDIA_MIMETYPE_VIDEO_WMV1, OMX_VIDEO_CodingWMV1},
+    { MEDIA_MIMETYPE_VIDEO_WMV2, OMX_VIDEO_CodingWMV2},
+    { MEDIA_MIMETYPE_VIDEO_VC1, OMX_VIDEO_CodingWMV},
+    { MEDIA_MIMETYPE_VIDEO_VP6, OMX_VIDEO_CodingVP6},
+    { MEDIA_MIMETYPE_VIDEO_S263, OMX_VIDEO_CodingS263},
+    { MEDIA_MIMETYPE_VIDEO_MJPEG, OMX_VIDEO_CodingMJPEG},
+    { MEDIA_MIMETYPE_VIDEO_MPEG1, OMX_VIDEO_CodingMPEG1},
+    { MEDIA_MIMETYPE_VIDEO_MSMPEG4V1, OMX_VIDEO_CodingMSMPEG4V1},
+    { MEDIA_MIMETYPE_VIDEO_MSMPEG4V2, OMX_VIDEO_CodingMSMPEG4V2},
+    { MEDIA_MIMETYPE_VIDEO_DIVX, OMX_VIDEO_CodingDIVX},
+    { MEDIA_MIMETYPE_VIDEO_XVID, OMX_VIDEO_CodingXVID},
+    { MEDIA_MIMETYPE_VIDEO_RXG2, OMX_VIDEO_CodingRXG2},
 };
 
 static status_t GetVideoCodingTypeFromMime(
@@ -5768,11 +5781,19 @@ void ACodec::BaseState::onInputBufferFilled(const sp<AMessage> &msg) {
                 info->checkReadFence("onInputBufferFilled");
 
                 status_t err2 = OK;
+
+#if 1
                 switch (metaType) {
                 case kMetadataBufferTypeInvalid:
                     break;
+                case kMetadataBufferTypeCameraSource:
+                case kMetadataBufferTypeGrallocSource:
+                    ALOGW("do not use the metaType(%d) in androidN", metaType);
+                    break;
 #ifndef OMX_ANDROID_COMPILE_AS_32BIT_ON_64BIT_PLATFORMS
                 case kMetadataBufferTypeNativeHandleSource:
+                // we can not support this metadatatype now
+                #if 0
                     if (info->mCodecData->size() >= sizeof(VideoNativeHandleMetadata)) {
                         VideoNativeHandleMetadata *vnhmd =
                             (VideoNativeHandleMetadata*)info->mCodecData->base();
@@ -5781,6 +5802,7 @@ void ACodec::BaseState::onInputBufferFilled(const sp<AMessage> &msg) {
                                 NativeHandle::create(vnhmd->pHandle, false /* ownsHandle */),
                                 bufferID);
                     }
+                #endif
                     break;
                 case kMetadataBufferTypeANWBuffer:
                     if (info->mCodecData->size() >= sizeof(VideoNativeMetadata)) {
@@ -5799,7 +5821,7 @@ void ACodec::BaseState::onInputBufferFilled(const sp<AMessage> &msg) {
                     err2 = ERROR_UNSUPPORTED;
                     break;
                 }
-
+#endif
                 if (err2 == OK) {
                     err2 = mCodec->mOMX->emptyBuffer(
                         mCodec->mNode,
@@ -6559,6 +6581,11 @@ bool ACodec::LoadedState::onConfigureComponent(
 
         mCodec->signalError(OMX_ErrorUndefined, makeNoSideEffectStatus(err));
         return false;
+    }
+
+    int isdrm = 0;
+    if(msg->findInt32("isdrm", &isdrm) && isdrm) {
+        mCodec->mFlags |= kFlagIsDRM;
     }
 
     {
@@ -8026,5 +8053,30 @@ status_t ACodec::getOMXChannelMapping(size_t numChannels, OMX_AUDIO_CHANNELTYPE 
 
     return OK;
 }
+
+status_t ACodec::setEncoderBitrate(int32_t bitrate)
+{
+    OMX_VIDEO_CONTROLRATETYPE bitrateMode = OMX_Video_ControlRateVariable;
+    OMX_VIDEO_PARAM_BITRATETYPE bitrateType;
+    InitOMXParams(&bitrateType);
+    bitrateType.nPortIndex = kPortIndexOutput;
+
+    if(mOMX == NULL)
+        return NO_INIT;
+
+    status_t err = mOMX->getParameter(
+                    mNode, OMX_IndexParamVideoBitrate,
+                    &bitrateType, sizeof(bitrateType));
+    if (err != OK) {
+        return err;
+    }
+    bitrateType.eControlRate = bitrateMode;
+    bitrateType.nTargetBitrate = bitrate;
+    return mOMX->setParameter(
+                mNode, OMX_IndexParamVideoBitrate,
+                &bitrateType, sizeof(bitrateType));
+
+}
+
 
 }  // namespace android

@@ -820,4 +820,9 @@ void MediaFilter::onSignalEndOfInputStream() {
     ALOGV("Output stream saw EOS.");
 }
 
+status_t MediaFilter::setEncoderBitrate(int32_t bitrate __unused) {
+    return OK;
+}
+
+
 }   // namespace android

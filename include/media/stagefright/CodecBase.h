@@ -84,6 +84,7 @@ struct CodecBase : public AHandler, /* static */ ColorUtils {
     virtual void signalRequestIDRFrame() = 0;
     virtual void signalSetParameters(const sp<AMessage> &msg) = 0;
     virtual void signalEndOfInputStream() = 0;
+    virtual status_t setEncoderBitrate(int32_t bitrate) = 0;
 
     struct PortDescription : public RefBase {
         virtual size_t countBuffers() = 0;
