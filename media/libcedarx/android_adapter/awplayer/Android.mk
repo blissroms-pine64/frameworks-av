@@ -69,7 +69,8 @@ LOCAL_SHARED_LIBRARIES +=   \
         libMemAdapter       \
         libxplayer          \
         libaw_output        \
-        libcdx_common
+        libcdx_common       \
+        liblog
 
 include $(BUILD_SHARED_LIBRARY)
 

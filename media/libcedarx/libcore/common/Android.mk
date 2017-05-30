@@ -28,7 +28,7 @@ LOCAL_SHARED_LIBRARIES := \
             libcutils     \
             libutils      \
             libcdx_base   \
-            libdl
+            libdl liblog
 
 ifeq ($(TARGET_ARCH),arm)
     LOCAL_CFLAGS += -Wno-psabi

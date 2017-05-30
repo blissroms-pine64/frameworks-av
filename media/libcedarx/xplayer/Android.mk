@@ -45,7 +45,8 @@ LOCAL_SHARED_LIBRARIES +=   \
         libcdx_base         \
         libcdx_stream       \
         libMemAdapter       \
-        libcdx_common
+        libcdx_common	    \
+	liblog
 
 include $(BUILD_SHARED_LIBRARY)
 

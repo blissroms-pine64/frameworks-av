@@ -22,7 +22,7 @@ LOCAL_PRELINK_MODULE := false
 
 LOCAL_MODULE:= libcdc_base
 
-LOCAL_SHARED_LIBRARIES:= libcutils
+LOCAL_SHARED_LIBRARIES:= libcutils liblog
 
 ifeq ($(LOLLIPOP_AND_NEWER), no)
 LOCAL_SHARED_LIBRARIES += libcorkscrew

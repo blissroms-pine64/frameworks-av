@@ -37,14 +37,11 @@ LOCAL_SHARED_LIBRARIES :=       \
     libstagefright_omx          \
     libstagefright_wfd          \
     libutils                    \
-<<<<<<< HEAD
-=======
     libvorbisidec               \
     libawplayer                 \
     libxplayer                  \
     libaw_output                \
     libawmetadataretriever      \
->>>>>>> ec6bd96... All changes from nougat-7.1 based on android-7.1.2_r11
 
 LOCAL_STATIC_LIBRARIES :=       \
     libstagefright_nuplayer     \

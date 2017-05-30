@@ -15,7 +15,7 @@ else
     LOCAL_SRC_FILES += omx_vdec.cpp
 endif
 
-TARGET_GLOBAL_CFLAGS += -DTARGET_BOARD_PLATFORM=$(TARGET_BOARD_PLATFORM)
+#TARGET_GLOBAL_CFLAGS += -DTARGET_BOARD_PLATFORM=$(TARGET_BOARD_PLATFORM)
 
 LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/../omxcore/inc/ \
@@ -44,7 +44,7 @@ LOCAL_SHARED_LIBRARIES := \
 	libMemAdapter \
 	libcdc_base \
 	libion        \
-	
+	liblog
 
 #libvdecoder
 LOCAL_MODULE:= libOmxVdec

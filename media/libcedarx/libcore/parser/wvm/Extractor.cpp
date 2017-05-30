@@ -396,7 +396,7 @@ status_t Extractor::selectTrack(size_t index) {
         }
     }
 
-    sp<MediaSource> source = mImpl->getTrack(index);
+    sp<IMediaSource> source = mImpl->getTrack(index);
 
     CHECK_EQ((status_t)OK, source->start());
 

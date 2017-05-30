@@ -204,7 +204,7 @@ player_type getPlayerType_l(int fd, int64_t offset, int64_t /*length*/)
 
 player_type getPlayerType_l(const char* url)
 {
-	char *strpos;
+	const char *strpos;
 	if (TestPlayerStub::canBeUsed(url))
 	{
 	        return TEST_PLAYER;

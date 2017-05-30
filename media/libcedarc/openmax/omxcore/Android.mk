@@ -20,7 +20,8 @@ LOCAL_SHARED_LIBRARIES := \
 	libcutils \
 	libutils \
 	libbinder \
-	libdl
+	libdl \
+	liblog
 
 LOCAL_MODULE:= libOmxCore
 

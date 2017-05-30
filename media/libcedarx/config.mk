@@ -27,8 +27,12 @@ else ifeq ($(CONF_ANDROID_VERSION), 7.1)
 	LOCAL_CFLAGS += -DCONF_ANDROID_MAJOR_VER=7
 	LOCAL_CFLAGS += -DCONF_ANDROID_SUB_VER=0
 	LOCAL_32_BIT_ONLY := true
+else ifeq ($(CONF_ANDROID_VERSION), O)
+	LOCAL_CFLAGS += -DCONF_ANDROID_MAJOR_VER=7
+	LOCAL_CFLAGS += -DCONF_ANDROID_SUB_VER=0
+	LOCAL_32_BIT_ONLY := true
 else
-    $(warning "not support android version: "$(CONF_ANDROID_VERSION))
+    $(error "not support android version: "$(CONF_ANDROID_VERSION))
 endif
 
 ########## configure CONFIG_TARGET_PRODUCT ##########

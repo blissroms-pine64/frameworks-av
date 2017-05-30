@@ -19,10 +19,12 @@ LOCAL_SRC_FILES := \
 
 ############# the interface of skia changed in AndroidN,
 ############# we do not support native render for subtitle
+ifneq ($(CONF_ANDROID_VERSION), O)
 ifneq ($(CONF_ANDROID_VERSION), 7.1)
 ifneq ($(CONF_ANDROID_VERSION), 7.0)
 ifneq ($(CONF_ANDROID_VERSION), 6.0)
 LOCAL_SRC_FILES += subtitleNativeDisplay/subtitleNativeDisplay.cpp
+endif
 endif
 endif
 endif
@@ -66,6 +68,8 @@ else ifeq ($(CONFIG_OS_VERSION), 7.0)
 LOCAL_C_INCLUDES += $(TOP)/external/icu/icu4c/source/common
 else ifeq ($(CONFIG_OS_VERSION), 7.1)
 LOCAL_C_INCLUDES += $(TOP)/external/icu/icu4c/source/common
+else ifeq ($(CONFIG_OS_VERSION), O)
+LOCAL_C_INCLUDES += $(TOP)/external/icu/icu4c/source/common
 else
 LOCAL_C_INCLUDES += $(TOP)/external/icu4c/common
 endif
@@ -93,11 +97,15 @@ LOCAL_SHARED_LIBRARIES +=   \
         libMemAdapter       \
         libcdc_base         \
         libxplayer          \
-        libcdx_common
+        libcdx_common	    \
+        libaudioclient      \
+        liblog
 
 ifneq ($(CONF_ANDROID_VERSION), 7.0)
 ifneq ($(CONF_ANDROID_VERSION), 7.1)
+ifneq ($(CONF_ANDROID_VERSION), O)
 LOCAL_SHARED_LIBRARIES +=   libskia
+endif
 endif
 endif
 

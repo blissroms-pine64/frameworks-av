@@ -7,7 +7,7 @@ include $(MOD_TOP)/config.mk
 
 LOCAL_CFLAGS += $(AW_OMX_EXT_CFLAGS)
 LOCAL_CFLAGS += -D__OS_ANDROID
-TARGET_GLOBAL_CFLAGS += -DTARGET_BOARD_PLATFORM=$(TARGET_BOARD_PLATFORM)
+#TARGET_GLOBAL_CFLAGS += -DTARGET_BOARD_PLATFORM=$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE_TAGS := optional
 
 ifeq ($(TARGET_ARCH_VARIANT), armv7-a-neon)
@@ -50,7 +50,8 @@ LOCAL_SHARED_LIBRARIES := \
 	libVE \
 	libMemAdapter \
 	libvencoder \
-        libcdc_base
+        libcdc_base \
+	liblog
 
 
 LOCAL_MODULE:= libOmxVenc

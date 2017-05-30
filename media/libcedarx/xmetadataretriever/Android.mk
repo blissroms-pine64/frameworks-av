@@ -43,7 +43,8 @@ LOCAL_SHARED_LIBRARIES +=   \
         libvdecoder         \
         libvencoder         \
         libcdx_base         \
-        libcdx_common
+        libcdx_common       \
+        liblog
 
 include $(BUILD_SHARED_LIBRARY)
 

@@ -34,8 +34,8 @@ LOCAL_SHARED_LIBRARIES := \
 	libui       \
 	libdl       \
 	libVE       \
-	libvideoengine
-	
+	libvideoengine \
+	liblog
 
 LOCAL_MODULE := libvdecoder
 

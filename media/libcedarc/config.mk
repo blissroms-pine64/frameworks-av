@@ -19,6 +19,8 @@ else ifeq ($(product), tulip)
         config_file = config_pad_A64_Marshmallow.mk
     else ifeq ($(android_version), 7) 
         config_file = config_pad_A64_Nougat.mk
+    else ifeq ($(android_version), O) 
+        config_file = config_pad_A64_Nougat.mk
     endif
 else ifeq ($(product), dolphin)
     ifeq ($(android_version), 4)
@@ -49,8 +51,7 @@ else ifeq ($(product), kylin)
 endif
 
 ifeq ($(config_file), null)
-    $(warning "can not find config_file: product=$(product), androd_version=$(android_version)")
+    $(error "can not find config_file: product=$(product), androd_version=$(android_version)")
 else
-    $(warning "config file: $(config_file)")
     include $(MODULE_TOP)/config/$(config_file)
 endif

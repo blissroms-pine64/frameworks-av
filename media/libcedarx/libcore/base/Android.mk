@@ -19,14 +19,16 @@ LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE:= libcdx_base
 
 LOCAL_SHARED_LIBRARIES:= libcutils \
-                         libutils
+                         libutils liblog
 
 ifneq ($(CONF_ANDROID_VERSION),5.0)
 ifneq ($(CONF_ANDROID_VERSION),5.1)
 ifneq ($(CONF_ANDROID_VERSION),6.0)
 ifneq ($(CONF_ANDROID_VERSION),7.0)
 ifneq ($(CONF_ANDROID_VERSION),7.1)
+ifneq ($(CONF_ANDROID_VERSION),O)
 LOCAL_SHARED_LIBRARIES += libcorkscrew
+endif
 endif
 endif
 endif

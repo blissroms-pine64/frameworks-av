@@ -21,7 +21,7 @@ LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE:= libcdx_stream
 
 LOCAL_SHARED_LIBRARIES = libdl libutils libcutils libcrypto libcdx_base libssl liblive555 libz \
-	libcdx_common
+	libcdx_common liblog
 
 LOCAL_WHOLE_STATIC_LIBRARIES = libcdx_rtmp_stream  libcdx_mms_stream
 

@@ -31,6 +31,8 @@ else ifeq ($(CONF_ANDROID_VERSION), 7.0)
 LOCAL_C_INCLUDES += $(TOP)/external/icu/icu4c/source/common
 else ifeq ($(CONF_ANDROID_VERSION), 7.1)
 LOCAL_C_INCLUDES += $(TOP)/external/icu/icu4c/source/common
+else ifeq ($(CONF_ANDROID_VERSION), O)
+LOCAL_C_INCLUDES += $(TOP)/external/icu/icu4c/source/common
 else
 LOCAL_C_INCLUDES += $(TOP)/external/icu4c/common
 endif

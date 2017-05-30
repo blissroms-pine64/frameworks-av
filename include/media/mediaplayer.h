@@ -350,7 +350,7 @@ private:
     /* add by Gary. start {{----------------------------------- */
     /* 2011-9-28 16:28:24 */
     /* save properties before creating the real player */
-    bool                        mSubGate;
+    //bool                        mSubGate;
     int                         mSubDelay;
     char                        mSubCharset[MEDIAPLAYER_NAME_LEN_MAX];
     int                         mMuteMode;   // 2012-03-07, set audio channel mute

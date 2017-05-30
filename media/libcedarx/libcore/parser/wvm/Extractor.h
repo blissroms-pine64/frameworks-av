@@ -99,7 +99,7 @@ private:
     };
 
     struct TrackInfo {
-        sp<MediaSource> mSource;
+        sp<IMediaSource> mSource;
         size_t mTrackIndex;
         status_t mFinalResult;
         MediaBuffer *mSample;
@@ -114,7 +114,7 @@ private:
 
     sp<DataSource> mDataSource;
 
-    sp<MediaExtractor> mImpl;
+    sp<IMediaExtractor> mImpl;
     bool mIsWidevineExtractor;
 
     Vector<TrackInfo> mSelectedTracks;

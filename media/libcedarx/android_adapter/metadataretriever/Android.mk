@@ -58,7 +58,8 @@ LOCAL_SHARED_LIBRARIES +=      \
         libicui18n             \
         libcdx_base            \
         libxmetadata_retriever \
-        libcdx_common
+        libcdx_common	       \
+	liblog
 
 include $(BUILD_SHARED_LIBRARY)
 

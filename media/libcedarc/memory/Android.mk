@@ -26,7 +26,7 @@ LOCAL_C_INCLUDES := $(MOD_PATH) \
 					$(MOD_PATH)/base/include  \
 					$(MOD_PATH)/ve/include 
 
-LOCAL_SHARED_LIBRARIES := libcutils libutils libVE
+LOCAL_SHARED_LIBRARIES := libcutils libutils libVE liblog
 
 
 LOCAL_CFLAGS += $(LAW_CFLAGS)

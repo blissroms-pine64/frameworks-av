@@ -40,7 +40,7 @@ LOCAL_C_INCLUDES  := \
 
 LOCAL_MODULE_TAGS := optional
 
-TARGET_GLOBAL_CFLAGS += -DTARGET_BOARD_PLATFORM=$(TARGET_BOARD_PLATFORM)
+#TARGET_GLOBAL_CFLAGS += -DTARGET_BOARD_PLATFORM=$(TARGET_BOARD_PLATFORM)
 
 LOCAL_CFLAGS += -Wno-deprecated-declarations
 #LOCAL_CFLAGS += -Werror -Wno-deprecated-declarations
@@ -58,7 +58,8 @@ LOCAL_SHARED_LIBRARIES +=   \
         libMemAdapter       \
         libcdx_base         \
         libion              \
-        libcdx_common
+        libcdx_common	    \
+	liblog
 
 include $(BUILD_SHARED_LIBRARY)
 
