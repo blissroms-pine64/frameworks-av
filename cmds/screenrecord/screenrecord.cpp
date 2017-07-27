@@ -65,6 +65,13 @@ static const uint32_t kFallbackWidth = 1280;        // 720p
 static const uint32_t kFallbackHeight = 720;
 static const char* kMimeTypeAvc = "video/avc";
 
+// Build-time parameters.
+#ifdef LANDSCAPE_ONLY
+static bool gLandscapeOnly = true;          // Only encode in landscape
+#else
+static bool gLandscapeOnly = false;
+#endif
+
 // Command-line parameters.
 static bool gVerbose = false;           // chatty on stdout
 static bool gRotate = false;            // rotate 90 degrees
@@ -158,7 +165,7 @@ static status_t prepareEncoder(float displayFps, sp<MediaCodec>* pCodec,
     format->setInt32("width", gVideoWidth);
     format->setInt32("height", gVideoHeight);
     format->setString("mime", kMimeTypeAvc);
-    format->setInt32("color-format", OMX_COLOR_FormatAndroidOpaque);
+    format->setInt32("color-format", OMX_COLOR_FormatYUV420Planar);
     format->setInt32("bitrate", gBitRate);
     format->setFloat("frame-rate", displayFps);
     format->setInt32("i-frame-interval", 10);
@@ -560,6 +567,17 @@ static status_t recordScreen(const char* fileName) {
         gVideoHeight = rotated ? mainDpyInfo.w : mainDpyInfo.h;
     }
 
+    // Some devices cannot handle encoding tall height (> 720), so we
+    // compensate by encoding in landscape and rotating
+    bool autoRotated = false;
+    if (gLandscapeOnly && !gSizeSpecified && gVideoHeight > gVideoWidth) {
+        int newWidth = gVideoHeight;
+        gVideoHeight = gVideoWidth;
+        gVideoWidth = newWidth;
+        gRotate = !gRotate;
+        autoRotated = true;
+    }
+
     // Configure and start the encoder.
     sp<MediaCodec> encoder;
     sp<FrameOutput> frameOutput;
@@ -650,7 +668,7 @@ static status_t recordScreen(const char* fileName) {
             muxer = new MediaMuxer(fd, MediaMuxer::OUTPUT_FORMAT_MPEG_4);
             close(fd);
             if (gRotate) {
-                muxer->setOrientationHint(90);  // TODO: does this do anything?
+                muxer->setOrientationHint(autoRotated ? 270 : 90);  // TODO: does this do anything?
             }
             break;
         }
